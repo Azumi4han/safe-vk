@@ -13,14 +13,7 @@ description = "A simple library to create your own vk bot for conversations"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
-[features]
-logger = ["log"]
-
 [dependencies]
-thiserror = "1.0.56"
-log = { version = "0.4.20", optional = true }
-
-# Requests
 reqwest = { version = "0.11.23", features = ["json"] }
 
 # Serde
