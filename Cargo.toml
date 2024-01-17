@@ -1,0 +1,25 @@
+[package]
+name = "safe-vk"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[features]
+logger = ["log"]
+
+[dependencies]
+thiserror = "1.0.56"
+log = { version = "0.4.20", optional = true }
+
+# Requests
+reqwest = { version = "0.11.23", features = ["json"] }
+
+# Serde
+serde = { version = "1.0.195", features = ["derive"] }
+serde_json = "1.0.111"
+
+# Async
+tokio = { version = "1.35.1", features = ["macros"] }
+futures = "0.3.30"
+
