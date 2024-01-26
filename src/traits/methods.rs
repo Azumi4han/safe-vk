@@ -1,10 +1,26 @@
-use crate::{Ctx, LongPollResponse, RequestBuilder};
+use crate::{Ctx, LongPollResponse, RequestBuilder, Result, User};
 use std::future::Future;
 
 pub trait Method {
     fn new(token: String) -> Self;
 
-    // fn keyboard(&self, keys: &[&str]) -> impl Future<Output = ()> + Send;
+    fn keyboard<T: serde::Serialize + Send, N: crate::NdArray<T> + Send>(
+        &self,
+        message: &str,
+        one_time: bool,
+        inline: bool,
+        buttons: N,
+    ) -> impl Future<Output = Result<()>> + Send;
+
+    fn event_answer<
+        'de,
+        T: serde::Serialize + Send,
+        A: serde::de::DeserializeOwned + PartialEq + serde::Serialize + Send,
+    >(
+        &self,
+        event_data: T,
+        payload: A,
+    ) -> impl Future<Output = Result<Option<A>>> + Send;
 
     fn reply(&self, message: &str) -> impl Future<Output = ()> + Send;
 
@@ -17,6 +33,8 @@ pub trait Method {
         ts: String,
         wait: usize,
     ) -> impl Future<Output = Ctx> + Send;
+
+    fn get_users(&self, user_ids: &[u64]) -> impl Future<Output = Result<Vec<User>>> + Send;
 
     fn custom_request(&self) -> &RequestBuilder;
 

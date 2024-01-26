@@ -1,18 +1,18 @@
 mod engine;
-mod error;
+mod keyboard;
 mod methods;
 mod reqwest_ext;
 mod responses;
-mod storage;
 mod traits;
+mod util;
 
 pub use engine::*;
-pub use error::*;
+pub use keyboard::*;
 pub use methods::*;
 pub use reqwest_ext::*;
 pub use responses::*;
-pub use storage::*;
 pub use traits::*;
+pub use util::*;
 
 #[macro_export]
 macro_rules! parse_response {

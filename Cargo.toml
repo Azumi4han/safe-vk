@@ -1,11 +1,11 @@
 [package]
 name = "safe-vk"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 authors = ["chifmaster113"]
 
 repository = "https://github.com/chifmaster113/safe-vk"
-keywords = ["vk", "bot", "longpoll"]
+keywords = ["vk", "bot", "longpoll", "vkontakte", "chat-bot"]
 license-file = "LICENSE"
 readme = "README.md"
 description = "A simple library to create your own vk bot for conversations"
@@ -16,11 +16,24 @@ description = "A simple library to create your own vk bot for conversations"
 [dependencies]
 reqwest = { version = "0.11.23", features = ["json"] }
 
+# Error handling
+thiserror = "1.0.56"
+
 # Serde
-serde = { version = "1.0.195", features = ["derive"] }
+serde = { version = "1.0.195", features = ["derive", "rc"] }
 serde_json = "1.0.111"
 
 # Async
-tokio = { version = "1.35.1", features = ["macros"] }
-futures = "0.3.30"
+tokio = { version = "1.35.1", features = ["macros", "rt-multi-thread"] }
 
+[lib]
+name = "safe_vk"
+path = "src/lib.rs"
+
+[[example]]
+name = "reply"
+path = "examples/reply.rs"
+
+[[example]]
+name = "keyboard"
+path = "examples/keyboard.rs"

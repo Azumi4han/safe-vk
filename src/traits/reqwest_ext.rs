@@ -1,4 +1,3 @@
-use crate::Result;
 use serde::Serialize;
 use serde_json::Value;
 use std::future::Future;
@@ -12,7 +11,7 @@ pub trait Request {
         method: &str,
         query: A,
         body: T,
-    ) -> impl Future<Output = Result<Value>> + Send;
+    ) -> impl Future<Output = std::result::Result<Value, reqwest::Error>> + Send;
 
     fn get<T: Serialize + Send, A: Serialize + Send + Sized>(
         &self,
@@ -20,5 +19,5 @@ pub trait Request {
         method: &str,
         query: A,
         body: T,
-    ) -> impl Future<Output = Result<Value>> + Send;
+    ) -> impl Future<Output = std::result::Result<Value, reqwest::Error>> + Send;
 }

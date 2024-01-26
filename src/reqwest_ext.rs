@@ -1,5 +1,4 @@
 use crate::traits::Request;
-use crate::Result;
 use serde::Serialize;
 use serde_json::Value;
 
@@ -19,7 +18,7 @@ macro_rules! request {
             method: &str,
             query: A,
             body: T,
-        ) -> Result<Value> {
+        ) -> std::result::Result<Value, reqwest::Error> {
             let response = self
                 .client
                 .post(&if method.is_empty() {

@@ -1,11 +1,13 @@
 use crate::{responses::Ctx, traits::Method, Methods};
-use futures::future::BoxFuture;
-use std::{collections::HashMap, future::Future, sync::Arc};
+use std::{collections::HashMap, future::Future, pin::Pin, sync::Arc};
 
 pub struct SafeVkBot {
     methods: Arc<Methods>,
-    commands: HashMap<String, Box<dyn Fn(Arc<Methods>) -> BoxFuture<'static, ()>>>,
-    watching: Vec<Box<dyn Fn(Arc<Methods>) -> BoxFuture<'static, ()>>>,
+    commands: HashMap<
+        String,
+        Box<dyn Fn(Arc<Methods>) -> Pin<Box<dyn Future<Output = ()> + Send + 'static>>>,
+    >,
+    watching: Vec<Box<dyn Fn(Arc<Methods>) -> Pin<Box<dyn Future<Output = ()> + Send + 'static>>>>,
 }
 
 impl SafeVkBot {

@@ -1,4 +1,5 @@
 use serde::Deserialize;
+use serde_json::Value;
 
 #[derive(Deserialize, Debug, PartialEq)]
 pub struct Ctx {
@@ -9,20 +10,35 @@ pub struct Ctx {
 #[derive(Deserialize, Debug, PartialEq)]
 pub struct Update {
     pub event_id: String,
+    // Bot group ID                         (bot)
     pub group_id: u64,
+    // Update object                        (anything)
     pub object: UpdateObject,
     #[serde(rename = "type")]
     pub update_type: String,
+    // VK api version                       (const / DO NOT CHANGE)
     pub v: String,
 }
 
 #[derive(Debug, Deserialize, PartialEq)]
 pub struct UpdateObject {
+    // Information about user               (message)
     pub client_info: Option<ClientInfo>,
+    // Message object                       (message)
     pub message: Option<Message>,
+    // Conversation message ID              (message)
     pub cmid: Option<i32>,
+    // unique ID for your button            (keyboard)
+    pub event_id: Option<String>,
+    // Unique ID for conversation / groups  (message)
     pub peer_id: Option<u64>,
+    // Who wrote message                    (message)
+    pub user_id: Option<u64>,
+    // Your custom payload for your button  (keyboard)
+    pub payload: Option<Value>,
+    // Reacted id                           (message)
     pub reacted_id: Option<u64>,
+    // Reaction id                          (message)
     pub reaction_id: Option<u64>,
 }
 
