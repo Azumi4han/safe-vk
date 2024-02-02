@@ -10,6 +10,9 @@ pub enum Error {
     #[error("Expected status success (1) but got uknown status {status}")]
     EventAnswerUnkownStatus { status: i8 },
 
+    #[error("Expected some content but got nothing in {from}")]
+    NoContent { from: &'static str },
+
     #[error("Serde JSON error: {0}")]
     SerdeJson(#[from] SerdeJsonError),
 

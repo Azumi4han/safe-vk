@@ -1,4 +1,4 @@
-use crate::{Ctx, LongPollResponse, RequestBuilder, Result, User};
+use crate::{Ctx, LongPollResponse, Members, RequestBuilder, Result, User};
 use std::future::Future;
 
 pub trait Method {
@@ -34,7 +34,14 @@ pub trait Method {
         wait: usize,
     ) -> impl Future<Output = Ctx> + Send;
 
-    fn get_users(&self, user_ids: &[u64]) -> impl Future<Output = Result<Vec<User>>> + Send;
+    fn get_users(&self, user_ids: &[i32]) -> impl Future<Output = Result<Vec<User>>> + Send;
+
+    fn get_members(
+        &self,
+        offset: Option<u16>,
+        count: Option<u16>,
+        extended: bool,
+    ) -> impl Future<Output = Result<Members>> + Send;
 
     fn custom_request(&self) -> &RequestBuilder;
 

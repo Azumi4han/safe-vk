@@ -15,7 +15,7 @@ This is a simple library for creating your own VK bot in **Rust 🦀**
 - Only [Long Poll](https://dev.vk.com/en/api/bots-long-poll/getting-started)
   is supported right now
 - Also has `watch` function that will be triggered each callback from VK
-- Provides a `get_users` function to fetch detailed information about users
+- Provides a `get_users` function for fetching detailed information about users, and a `get_members` function for retrieving a list of conversation participants
 - But these functions are enough to create a simple bot
 
 ## Prerequisites
@@ -43,7 +43,7 @@ $ cargo update
 Here's a simple example to get you started with safe-vk:
 
 ```rust
-use safe_vk::{SafeVkBot, Methods};
+use safe_vk::{SafeVkBot, Method, Methods};
 use std::sync::Arc;
 
 const GROUP_ID: u32 = YOUR_GROUP_ID_HERE;
@@ -202,8 +202,9 @@ pub async fn many_buttons(ctx: Arc<Methods>) {
 For more, see [examples](./examples/). To run an examples, use the following commands in your terminal:
 
 ```shell
-$ cargo run --example reply
-$ cargo run --example keyboard
+$ GROUP_ID=YOUR_GROUP_ID TOKEN=YOUR_TOKEN cargo run --example reply
+$ GROUP_ID=YOUR_GROUP_ID TOKEN=YOUR_TOKEN cargo run --example keyboard
+$ GROUP_ID=YOUR_GROUP_ID TOKEN=YOUR_TOKEN cargo run --example members
 ```
 
 But don't forget to include your token and group ID

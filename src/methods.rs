@@ -2,7 +2,7 @@ use crate::{
     parse_response,
     traits::{Method, Request},
     util::{Error, NdArray, Result},
-    Ctx, LongPollResponse, RequestBuilder, User,
+    Ctx, LongPollResponse, Members, RequestBuilder, User,
 };
 use serde::Serialize;
 use serde_json::json;
@@ -193,7 +193,7 @@ impl Method for Methods {
         parse_response!(response, Ctx).expect("Unable to parse longPoll request")
     }
 
-    async fn get_users(&self, user_ids: &[u64]) -> Result<Vec<User>> {
+    async fn get_users(&self, user_ids: &[i32]) -> Result<Vec<User>> {
         let serialize = serde_json::to_string(&user_ids[0])?;
         let response = self
             .request
@@ -201,6 +201,44 @@ impl Method for Methods {
             .await
             .unwrap();
         Ok(parse_response!(response, Vec<User>).expect("Unable to parse `users.get` response"))
+    }
+
+    /// This function retrieves a list of participants in the conversation
+    async fn get_members(
+        &self,
+        offset: Option<u16>,
+        count: Option<u16>,
+        extended: bool,
+    ) -> Result<Members> {
+        let context = self.context().await;
+        for update in &context.updates {
+            if let Some(message) = &update.object.message {
+                let mut params = vec![("peer_id", message.peer_id.to_string())];
+
+                if extended {
+                    params.push(("extended", String::from("1")));
+                } else {
+                    params.push(("extended", String::from("0")));
+                }
+
+                if let Some(offset_val) = offset {
+                    params.push(("offset", offset_val.to_string()));
+                }
+                if let Some(count_val) = count {
+                    params.push(("count", count_val.to_string()));
+                }
+
+                let res = self
+                    .request
+                    .post(VK, "messages.getConversationMembers", &params, {})
+                    .await?;
+
+                return Ok(parse_response!(res, Members)?);
+            }
+        }
+        Err(Error::NoContent {
+            from: "getConversationMembers",
+        })
     }
 
     fn custom_request(&self) -> &RequestBuilder {

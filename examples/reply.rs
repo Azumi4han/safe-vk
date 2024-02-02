@@ -1,9 +1,7 @@
 use safe_vk::{Method, Methods, SafeVkBot};
-use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
+use std::{env, sync::Arc};
 
-const GROUP_ID: u32 = YOUR_GROUP_ID_HERE;
-const TOKEN: &'static str = "YOUR_TOKEN_HERE";
 async fn help(ctx: Arc<Methods>) {
     ctx.reply(
         "Commands:\n`$hi`: will greet you\n`$number`: sends a random number between 0 and 10",
@@ -33,11 +31,18 @@ async fn random(ctx: Arc<Methods>) {
 
 #[tokio::main]
 async fn main() {
-    let bot = SafeVkBot::create(TOKEN);
+    let group_id: u32 = env::var("GROUP_ID")
+        .unwrap_or_else(|_| "0".into())
+        .parse()
+        .expect("GROUP_ID must be a valid u32");
+
+    let token = env::var("TOKEN").expect("TOKEN environment variable not set");
+
+    let bot = SafeVkBot::create(&token);
 
     bot.command("$help", help)
         .command("$hi", hi)
         .command("$number", random)
-        .start_polling(GROUP_ID)
+        .start_polling(group_id)
         .await;
 }

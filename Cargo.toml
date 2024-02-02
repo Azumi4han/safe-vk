@@ -37,3 +37,7 @@ path = "examples/reply.rs"
 [[example]]
 name = "keyboard"
 path = "examples/keyboard.rs"
+
+[[example]]
+name = "members"
+path = "examples/members.rs"

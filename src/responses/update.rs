@@ -11,7 +11,7 @@ pub struct Ctx {
 pub struct Update {
     pub event_id: String,
     // Bot group ID                         (bot)
-    pub group_id: u64,
+    pub group_id: i32,
     // Update object                        (anything)
     pub object: UpdateObject,
     #[serde(rename = "type")]
@@ -31,15 +31,15 @@ pub struct UpdateObject {
     // unique ID for your button            (keyboard)
     pub event_id: Option<String>,
     // Unique ID for conversation / groups  (message)
-    pub peer_id: Option<u64>,
+    pub peer_id: Option<i32>,
     // Who wrote message                    (message)
-    pub user_id: Option<u64>,
+    pub user_id: Option<i32>,
     // Your custom payload for your button  (keyboard)
     pub payload: Option<Value>,
     // Reacted id                           (message)
-    pub reacted_id: Option<u64>,
+    pub reacted_id: Option<i32>,
     // Reaction id                          (message)
-    pub reaction_id: Option<u64>,
+    pub reaction_id: Option<i32>,
 }
 
 #[derive(Debug, Deserialize, PartialEq)]
@@ -54,17 +54,17 @@ pub struct ClientInfo {
 #[derive(Debug, Deserialize, PartialEq)]
 pub struct Message {
     pub attachments: Vec<Attachment>,
-    pub conversation_message_id: u64,
-    pub date: u64,
-    pub from_id: u64,
+    pub conversation_message_id: i32,
+    pub date: i32,
+    pub from_id: i32,
     pub fwd_message: Option<Vec<String>>,
-    pub id: u64,
+    pub id: i32,
     pub important: bool,
     pub is_hidden: bool,
     pub is_unavailable: bool,
-    pub out: u64,
-    pub peer_id: u64,
-    pub random_id: u64,
+    pub out: i32,
+    pub peer_id: i32,
+    pub random_id: i32,
     pub text: String,
     pub version: u64,
 }
@@ -91,8 +91,8 @@ pub struct Photo {
     pub album_id: i32,
     pub date: u32,
     pub has_tags: bool,
-    pub id: u64,
-    pub owner_id: u64,
+    pub id: i32,
+    pub owner_id: i32,
     pub sizes: Vec<AttachmentSize>,
     pub text: String,
     pub web_view_token: String,
@@ -112,13 +112,13 @@ pub struct Video {
     access_key: String,
     can_add: i32,
     content_restricted: i32,
-    date: i64,
-    duration: i64,
+    date: i32,
+    duration: i32,
     height: i32,
-    id: i64,
+    id: i32,
     image: Vec<Image>,
     is_private: i32,
-    owner_id: i64,
+    owner_id: i32,
     response_type: String,
     restriction: Restriction,
     title: String,

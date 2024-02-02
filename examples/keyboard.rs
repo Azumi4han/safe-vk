@@ -1,9 +1,7 @@
 use safe_vk::{Button, ButtonAbstraction, KeyboardColor, Method, Methods, SafeVkBot};
 use serde::{Deserialize, Serialize};
-use std::sync::Arc;
+use std::{env, sync::Arc};
 
-const GROUP_ID: u32 = YOUR_GROUP_ID_HERE;
-const TOKEN: &'static str = "YOUR_TOKEN_HERE"
 const PAYLOAD: Payload = Payload { button: 1 };
 const SNACKBAR: SnackBar = SnackBar {
     r#type: "show_snackbar",
@@ -39,10 +37,17 @@ async fn changes(ctx: Arc<Methods>) {
 
 #[tokio::main]
 async fn main() {
-    let bot = SafeVkBot::create(TOKEN);
+    let group_id: u32 = env::var("GROUP_ID")
+        .unwrap_or_else(|_| "0".into())
+        .parse()
+        .expect("GROUP_ID must be a valid u32");
+
+    let token = env::var("TOKEN").expect("TOKEN environment variable not set");
+
+    let bot = SafeVkBot::create(&token);
 
     bot.watch(changes)
         .command("$alert", alert)
-        .start_polling(GROUP_ID)
+        .start_polling(group_id)
         .await;
 }
