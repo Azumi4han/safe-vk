@@ -61,7 +61,6 @@ pub struct Message {
     pub id: i32,
     pub important: bool,
     pub is_hidden: bool,
-    pub is_unavailable: bool,
     pub out: i32,
     pub peer_id: i32,
     pub random_id: i32,
