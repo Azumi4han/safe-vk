@@ -1,0 +1,10 @@
+[package]
+name = "keyboard"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+serde = "1.0.201"
+safe-vk = { path = "../../safe-vk", features = ["macros"] }
+tokio = { version = "1.0", features = ["full"] }

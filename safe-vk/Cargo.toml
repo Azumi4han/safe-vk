@@ -1,0 +1,66 @@
+[package]
+name = "safe-vk"
+version = "0.3.0-alpha"
+edition = "2021"
+authors = ["Azumi4han"]
+homepage = "https://github.com/Azumi4han/safe-vk"
+
+repository = "https://github.com/Azumi4han/safe-vk"
+keywords = ["vk", "bot", "longpoll", "vkontakte", "chat-bot"]
+categories = ["asynchronous", "api-bindings", "network-programming"]
+license-file = "LICENSE"
+readme = "README.md"
+description = "A simple library to create your own vk bot for conversations"
+
+[lib]
+name = "safe_vk"
+path = "src/lib.rs"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[features]
+default = ["tokio"] 
+macros = ["dep:safe-vk-macros"]
+
+[dependencies]
+futures-util = { version = "0.3", default-features = false, features = ["alloc"] }
+tokio = { package = "tokio", version = "1.35.1", optional = true }
+safe-vk-macros = { path = "../safe-vk-macros", version = "0.1.0", optional = true }
+safe-vk-common = { path = "../safe-vk-common", version = "0.1.0" }
+serde = { version = "1.0.195", features = ["derive", "rc"] }
+reqwest = { version = "0.11.23", features = ["multipart", "json"]  }
+pin-project-lite = "0.2.7"
+futures-core = "0.3.30"
+serde_json = "1.0.111"
+regex = "1.10.3"
+
+[dev-dependencies]
+tokio = { version = "1.35.1", features = ["macros", "rt-multi-thread"] }
+reqwest = { version = "0.11.23", features = ["json", "multipart"] }
+
+[[example]]
+name = "comfyui"
+path = "../examples/comfyui/src/main.rs"
+
+[[example]]
+name = "reply"
+path = "../examples/reply/src/main.rs"
+
+[[example]]
+name = "keyboard"
+path = "../examples/keyboard/src/main.rs"
+
+[[example]]
+name = "members"
+path = "../examples/members/src/main.rs"
+
+[[example]]
+name = "state"
+path = "../examples/state/src/main.rs"
+
+[[example]]
+name = "oobabooga"
+path = "../examples/oobabooga/src/main.rs"
+
+[[example]]
+name = "macros"
+path = "../examples/macros/src/main.rs"

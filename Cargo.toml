@@ -1,0 +1,3 @@
+[workspace]
+members = ["safe-vk", "safe-vk-*", "examples/*"]
+resolver = "2"

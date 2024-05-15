@@ -1,0 +1,23 @@
+[package]
+version = "0.1.0"
+edition = "2021"
+name = "safe-vk-macros"
+description = "This is an optional library with macros for safe-vk"
+keywords = ["safe-vk"]
+license-file = "LICENSE"
+repository = "https://github.com/azumi4han/safe-vk"
+
+[features]
+default = []
+
+[lib]
+proc-macro = true
+
+[dependencies]
+quote = "1.0"
+proc-macro2 = "1.0"
+syn = { version = "2.0", features = ["full"] }
+
+[dev-dependencies]
+safe-vk = { path = "../safe-vk", version = "0.3.0-alpha", features = ["macros"] }
+
