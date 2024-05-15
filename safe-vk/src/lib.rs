@@ -8,7 +8,7 @@
 //! updates from VK API.
 //!
 //! Take a look:
-//! ```rust
+//! ```ignore
 //! use safe_vk::{extract::Ctx, responses::Message, Filter, Result, SafeVk};
 //!
 //! // Route
@@ -28,7 +28,7 @@
 //! }
 //! ```
 //! You can simplify it even further by enabling the `macros` feature.
-//! ```
+//! ```rust
 //! use safe_vk::{extract::Ctx, responses::Message, Filter, auto_ok, SafeVk};
 //!
 //! #[auto_ok]

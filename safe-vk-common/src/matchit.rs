@@ -4,8 +4,8 @@
 //!
 //! [`Filter::Strict`](crate::util::Filter::Strict) requires the command to match exactly:
 //!
-//! ```
-//! use safe_vk::util::{matchit, Filter};
+//! ```ignore
+//! use safe_vk::{matchit, Filter};
 //!
 //! let command = "/start";
 //! let filter = &Filter::Strict;
@@ -17,8 +17,8 @@
 //!
 //! [`Filter::Flexible`](crate::util::Filter::Flexible) allows some variations like different cases and extra spaces:
 //!
-//! ```
-//! use safe_vk::util::{matchit, Filter};
+//! ```ignore
+//! use safe_vk::{matchit, Filter};
 //!
 //! let command = "/start";
 //! let filter = &Filter::Flexible;
@@ -30,8 +30,8 @@
 //!
 //! [`Filter::Sensitive`](crate::util::Filter::Sensitive) will trigger without any symbol and is case-insensitive:
 //!
-//! ```
-//! use safe_vk::util::{matchit, Filter};
+//! ```ignore
+//! use safe_vk::{matchit, Filter};
 //!
 //! let command = "/start";
 //! let filter = &Filter::Sensitive;

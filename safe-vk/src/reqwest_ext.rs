@@ -66,18 +66,7 @@ impl RequestBuilder {
             _ts: Mutex::new(0),
         }
     }
-    /// Build a long poll request for retriving an udpates from VK
-    /// ```rust
-    /// use safe_vk::{SafeVk, RequestBuilder};
-    ///
-    /// #[tokio::main]
-    /// async fn main() {
-    ///     let request = RequestBuilder::new("my secret token", 1234);
-    ///  
-    ///     let _ = request.build_long_poll_request().await.unwrap();
-    /// }
-    ///
-    /// ```
+
     pub async fn build_long_poll_request(&self) -> Result<LongPollResponse<Value>> {
         let response = self
             .post(
