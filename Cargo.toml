@@ -1,3 +1,4 @@
 [workspace]
 members = ["safe-vk", "safe-vk-*", "examples/*"]
+default-members= ["safe-vk", "safe-vk-*"]
 resolver = "2"
