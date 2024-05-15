@@ -3,6 +3,7 @@ name = "safe-vk-common"
 version = "0.1.0"
 edition = "2021"
 keywords = ["safe-vk"]
+description = "This is an optional library with commong utilites for safe-vk"
 license-file = "LICENSE"
 repository = "https://github.com/azumi4han/safe-vk"
 
