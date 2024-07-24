@@ -13,18 +13,17 @@
 //!
 //! // Route
 //! async fn vkbot(update: Ctx<Message>) -> Result<()> {
-//!     update.message_text("it works!").send().await?;
+//!     update.messages().send().random_id(0).message("it works!").await?;
 //!     Ok(())
 //! }
 //!
 //! #[tokio::main]
 //! async fn main() {
 //!     let token = "my super secret token";
-//!     let group_id = 88005553;
 //!     // Add as many routes as you want
 //!     let bot = SafeVk::new().command("/safevk", vkbot, Filter::Strict);
 //!     // Starting to listen for updates
-//!     safe_vk::start_polling(token, group_id, bot).await.unwrap();
+//!     safe_vk::start_polling(token, bot).await.unwrap();
 //! }
 //! ```
 //! You can simplify it even further by enabling the `macros` feature.
@@ -33,7 +32,7 @@
 //!
 //! #[auto_ok]
 //! async fn vkbot(update: Ctx<Message>) {
-//!     update.message_text("it works!").send().await?;
+//!     update.messages().send().random_id(0).message("it works!").await?;
 //! }
 //! ```
 //!
