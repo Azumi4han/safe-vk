@@ -30,7 +30,7 @@ pub struct ReplyMessage<T> {
     /// Time the message was sent in Unixtime.
     pub date: i64,
     /// Destination identifier.
-    pub peer_id: i32,
+    pub peer_id: i64,
     /// Sender identifier.
     pub from_id: i32,
     /// Message text.
@@ -48,7 +48,7 @@ pub struct PersonalMessage<T> {
     /// Time the message was sent in Unixtime.
     pub date: i64,
     /// Destination identifier.
-    pub peer_id: i32,
+    pub peer_id: i64,
     /// Sender identifier.
     pub from_id: i32,
     /// Message text.

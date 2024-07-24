@@ -1,3 +1,4 @@
+use futures::StreamExt;
 use safe_vk::{
     auto_ok,
     extract::{Ctx, State},
@@ -16,6 +17,17 @@ pub struct AppState {
 }
 
 #[auto_ok]
+async fn update_message(update: &Ctx<Message>, message: &str, message_id: i32, peer_id: i64) {
+    update
+        .messages()
+        .edit()
+        .peer_id(peer_id)
+        .conversation_message_id(message_id)
+        .message(&message)
+        .await?;
+}
+
+#[auto_ok]
 async fn answer(State(state): State<Arc<Mutex<AppState>>>, update: Ctx<Message>) {
     let mut state = state.lock().await;
     if let Some(reply) = &update.message.reply_message {
@@ -28,39 +40,92 @@ async fn answer(State(state): State<Arc<Mutex<AppState>>>, update: Ctx<Message>)
     let data = json!({"role": "user", "content": message});
 
     state.history.push(data);
-    let response = reqwest::Client::new()
+
+    if state.history.len() > 30 {
+        state.history.clear();
+    };
+
+    let message_details = update
+        .messages()
+        .send()
+        .random_id(0)
+        .peer_ids(&[update.message.peer_id])
+        .message("...")
+        .await?
+        .unwrap();
+
+    let client = reqwest::Client::new();
+
+    // Send a POST request to the SSE endpoint
+    let response = client
         .post(OPEN_API)
         .json(&json!({
             "prompt": message,
             "messages": state.history,
-            "mode": "chat",  // Options: 'chat', 'chat-instruct', 'instruct'
-            "instruction_template": "Alpaca",
+            "stream": true,
+            "max_tokens": 200,
+            "temperature": 0.8,
+            "top_p": 0.9,
+            "top_k": 100,
+            "top_a": 0,
+            "mode": "instruct",
         }))
         .send()
         .await
-        .unwrap()
-        .json::<Value>()
-        .await
         .unwrap();
 
-    let output = response["choices"][0]["message"]["content"]
-        .as_str()
-        .unwrap();
+    let mut stream = response.bytes_stream();
+    let mut accumulated_message = String::new();
+    let mut token_count = 0;
 
-    state
-        .history
-        .push(json!({"role": "assistant", "content": output}));
+    while let Some(chunk) = stream.next().await {
+        match chunk {
+            Ok(bytes) => {
+                let text = String::from_utf8_lossy(&bytes);
+                if text.starts_with("data: ") {
+                    let json_str = &text[6..]; // Strip "data: " prefix
+                    if let Ok(json) = serde_json::from_str::<Value>(json_str) {
+                        if let Some(content) = json["choices"][0]["delta"]["content"].as_str() {
+                            let tokens: Vec<&str> = content.split_whitespace().collect();
+                            token_count += tokens.len();
+                            accumulated_message.push_str(content);
 
-    update.message_text(output).send().await?;
+                            if token_count >= 5 {
+                                update_message(
+                                    &update,
+                                    &accumulated_message,
+                                    message_details[0].conversation_message_id,
+                                    message_details[0].peer_id,
+                                )
+                                .await?;
+
+                                token_count = 0;
+                            }
+                        }
+                    } else {
+                        eprintln!("Failed to parse chunk as JSON: {}", json_str);
+                    }
+                } else {
+                    eprintln!("Unexpected chunk format: {}", text);
+                }
+            }
+            Err(e) => eprintln!("Error while streaming response: {}", e),
+        }
+    }
+
+    update_message(
+        &update,
+        &accumulated_message,
+        message_details[0].conversation_message_id,
+        message_details[0].peer_id,
+    )
+    .await?;
+
+    println!("{:#?}", accumulated_message);
 }
 
 #[tokio::main]
 async fn main() {
-    let group_id: u32 = env::var("GROUP_ID")
-        .unwrap_or_else(|_| "0".into())
-        .parse()
-        .expect("GROUP_ID must be a valid u32");
-
     let token = env::var("TOKEN").expect("TOKEN environment variable not set");
 
     let bot = SafeVk::new()
@@ -69,5 +134,5 @@ async fn main() {
             history: Vec::new(),
         })));
 
-    safe_vk::start_polling(&token, group_id, bot).await.unwrap();
+    safe_vk::start_polling(&token, bot).await.unwrap();
 }

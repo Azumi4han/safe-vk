@@ -1,10 +1,13 @@
 use super::{
+    parse_response,
     responses::{LongPollResponse, LongPollSession},
     Error, Result, VkError,
 };
 use serde::Serialize;
 use serde_json::Value;
+use std::sync::Arc;
 use tokio::sync::Mutex;
+use urlencoding::encode;
 
 /// A [`RequestBuilder`] responsible for establishing connections to [VK Long Poll](https://dev.vk.com/en/api/bots-long-poll/getting-started)
 /// and sending method requests to the VK API.
@@ -12,34 +15,44 @@ use tokio::sync::Mutex;
 /// This struct holds your `access_token` and `group_id` obtained from VK.
 /// For more information about how to obtai an access token, see
 /// [official documentation](https://dev.vk.com/en/api/community-messages/getting-started#Getting%20the%20Access%20Key%20in%20Community%20Settings).
+#[derive(Clone, Debug)]
 pub struct RequestBuilder {
     client: reqwest::Client,
     access_token: String,
-    group_id: u32,
-    _ts: Mutex<usize>,
+    _ts: Arc<Mutex<Option<String>>>,
 }
 
 pub const VK: &'static str = "https://api.vk.com/method";
+pub const WAIT_TIME: u8 = 25;
 pub const VERSION: &'static str = "5.199";
 
 macro_rules! request {
     ($method:ident) => {
         #[doc = concat!("Sends a `", stringify!($method), "` request using [reqwest] library to accomplish that.")]
-        pub async fn $method<T: Serialize + Send, A: Serialize + Send + Sized>(
+        pub async fn $method<T: Serialize + Send>(
             &self,
             url: &str,
             method: &str,
-            query: A,
+            query: &[u8],
             body: T,
         ) -> Result<Value> {
+            // This is totally fine!!! "itoa" library guarantee that it will return valid utf8,
+            // hence it's safe to use "unsafe" block here!!! It will make this code blazingly fast!
+            #[cfg(feature = "unsafe")]
+            let query = unsafe { std::str::from_utf8_unchecked(query) };
+
+            #[cfg(not(feature = "unsafe"))]
+            let query = std::str::from_utf8(query).unwrap();
+
+            let query = encode(query).replace("%3D", "=").replace("%26", "&");
+
             let response = self
                 .client
-                .$method(&if method.is_empty() {
-                    format!("{}?v={}", url, VERSION)
+                .$method(if method.is_empty() {
+                    format!("{}?{}v={}", url, query, VERSION)
                 } else {
-                    format!("{}/{}?v={}", url, method, VERSION)
+                    format!("{}/{}?{}v={}", url, method, query, VERSION)
                 })
-                .query(&query)
                 .bearer_auth(&self.access_token)
                 .json(&body)
                 .send()
@@ -58,67 +71,76 @@ macro_rules! request {
 
 impl RequestBuilder {
     /// Creates a new instance of [RequestBuilder]
-    pub fn new(access_token: &str, group_id: u32) -> Self {
+    pub fn new(access_token: impl Into<String>) -> Self {
         RequestBuilder {
             client: reqwest::Client::new(),
-            access_token: access_token.to_string(),
-            group_id,
-            _ts: Mutex::new(0),
+            access_token: access_token.into(),
+            _ts: Arc::new(Mutex::new(None)),
         }
     }
 
-    pub async fn build_long_poll_request(&self) -> Result<LongPollResponse<Value>> {
-        let response = self
-            .post(
+    pub(crate) async fn get_long_poll_server(&mut self) -> Result<LongPollSession> {
+        let group_id = self.get_group_id().await?;
+
+        let response = parse_response!(
+            self.post(
                 VK,
                 "groups.getLongPollServer",
-                &[("group_id", self.group_id)],
-                {},
+                format!("group_id={}&", group_id).as_bytes(),
+                {}
             )
-            .await?;
+            .await?,
+            LongPollSession
+        )?;
 
-        let parsed_response =
-            crate::parse_response!(response, LongPollSession).map_err(|e| Error::SerdeJson(e))?;
+        Ok(response)
+    }
 
-        // Safe unwrap here, since VK always return a number in "ts" field
-        let ts = parsed_response.ts.parse::<usize>().unwrap();
-        let prev_ts = self._ts.lock().await;
+    pub async fn get_group_id(&self) -> Result<u64> {
+        let response = self.post(VK, "groups.getById", b"", {}).await?;
+        let group_id = response["response"]["groups"][0]
+            .get("id")
+            .unwrap()
+            .as_u64()
+            .unwrap();
 
-        let ts = if *prev_ts == ts { ts + 1 } else { ts };
+        Ok(group_id)
+    }
+
+    pub async fn build_long_poll_request(
+        &self,
+        longpoll: &LongPollSession,
+    ) -> Result<LongPollResponse<Value>> {
+        let mut prev_ts = self._ts.lock().await;
+
+        let ts = match &*prev_ts {
+            Some(t) => t,
+            None => &longpoll.ts,
+        };
+
+        let query = format!(
+            "act=a_check&key={}&ts={}&wait={}&version=3",
+            longpoll.key, ts, WAIT_TIME
+        );
 
         let response = self
-            .post(
-                &parsed_response.server,
-                "",
-                &[
-                    ("act", String::from("a_check")),
-                    ("key", parsed_response.key),
-                    ("ts", ts.to_string()),
-                    ("wait", String::from("25")),
-                ],
-                {},
-            )
+            .post(&longpoll.server, "", query.as_bytes(), {})
             .await?;
 
-        drop(prev_ts);
+        let mut response = parse_response!(response, LongPollResponse<Value>)?;
 
-        let parsed_response = crate::parse_response!(response, LongPollResponse<Value>)
-            .map_err(|e| Error::SerdeJson(e))?;
-
-        if let Some(ref updates) = parsed_response.updates {
-            if updates.len() > 0 {
-                let mut local_version = self._ts.lock().await;
-                *local_version = ts;
-            }
+        if let Some(ts) = response.ts.take() {
+            *prev_ts = Some(ts);
+            drop(prev_ts);
         }
 
-        match parsed_response.failed {
+        match response.failed {
             Some(1) => Err(Error::EventsOutdated {
-                new_ts: parsed_response.ts.unwrap(),
+                new_ts: response.ts.unwrap(),
             }),
             Some(2) => Err(Error::KeyExpired),
             Some(3) => Err(Error::InformationLost),
-            _ => Ok(parsed_response),
+            _ => Ok(response),
         }
     }
 

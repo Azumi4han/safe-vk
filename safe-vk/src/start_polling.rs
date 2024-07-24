@@ -8,18 +8,18 @@ use std::{
 };
 
 pub struct Polling<M, S> {
-    request: Arc<RequestBuilder>,
+    request: RequestBuilder,
     safevk: M,
     _marker: PhantomData<S>,
 }
 
-pub fn start_polling<M, S>(token: &str, group_id: u32, safevk: M) -> Polling<M, S>
+pub fn start_polling<M, S>(token: &str, safevk: M) -> Polling<M, S>
 where
     M: Service<(), Response = S>,
     S: Service<Update, Response = ()> + Clone + Send + 'static,
     S::Future: Send,
 {
-    let request = Arc::new(RequestBuilder::new(token, group_id));
+    let request = RequestBuilder::new(token);
     Polling {
         request,
         safevk,
@@ -40,12 +40,16 @@ where
     fn into_future(self) -> Self::IntoFuture {
         PollFuture(Box::pin(async move {
             let Self {
-                request,
+                mut request,
                 mut safevk,
                 _marker: _,
             } = self;
+
+            let longpoll = request.get_long_poll_server().await?;
+            let request = Arc::new(request);
+
             loop {
-                let res = request.build_long_poll_request().await?;
+                let res = request.build_long_poll_request(&longpoll).await?;
 
                 if let Some(updates) = res.updates {
                     for event in updates {
@@ -53,11 +57,11 @@ where
                             .await
                             .unwrap();
 
-                        let request = Arc::clone(&request);
+                        let request_clone = Arc::clone(&request);
                         let mut safevk = safevk.clone();
 
                         let _: tokio::task::JoinHandle<Response<()>> = tokio::spawn(async move {
-                            match safevk.call(event, request).await {
+                            match safevk.call(event, request_clone).await {
                                 Ok(..) => Ok(()),
                                 Err(err) => panic!("{err}"),
                             }

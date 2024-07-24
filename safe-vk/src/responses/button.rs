@@ -1,7 +1,7 @@
 use crate::Error;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone, Debug, Default)]
 pub struct ButtonPressCallback<T> {
     /// The ID of the conversation message associated with the button press.
     pub conversation_message_id: i32,

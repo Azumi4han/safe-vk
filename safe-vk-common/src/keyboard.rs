@@ -66,6 +66,7 @@ pub struct Button<T> {
     color: Option<KeyboardColor>,
 }
 
+// Button colors are only for 'text' and 'callback' buttons
 impl<T> Button<T> {
     pub fn new(action: KeyboardAction<T>, color: Option<KeyboardColor>) -> Self {
         Button { action, color }
@@ -144,5 +145,70 @@ impl<T> Button<T> {
             },
             Some(color),
         )
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ShowSnackbar {
+    /// The type of action, always set to 'show_snackbar'.
+    #[serde(rename = "type")]
+    event_type: &'static str,
+    /// The text to display in the snackbar. Maximum length is 90 characters.
+    text: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct OpenLink {
+    /// The type of action, always set to 'open_link'.
+    #[serde(rename = "type")]
+    event_type: &'static str,
+    /// The URL to be opened.
+    link: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct OpenApp {
+    /// The type of action, always set to 'open_app'.
+    #[serde(rename = "type")]
+    event_type: &'static str,
+    /// The app identifier for the VK Mini Apps.
+    app_id: i32,
+    /// The identifier of the community where the app is installed, if it is opened in a community context.
+    owner_id: i32,
+    /// The navigation hash that will be added to the launch parameters after the '#' symbol.
+    ///
+    /// Do not include the '#' symbol in the hash.
+    hash: String,
+}
+
+impl ShowSnackbar {
+    /// Creates a new `ShowSnackbar` action.
+    pub fn new(text: impl Into<String>) -> Self {
+        ShowSnackbar {
+            event_type: "show_snackbar",
+            text: text.into(),
+        }
+    }
+}
+
+impl OpenLink {
+    /// Creates a new `OpenLink` action.
+    pub fn new(link: impl Into<String>) -> Self {
+        OpenLink {
+            event_type: "open_link",
+            link: link.into(),
+        }
+    }
+}
+
+impl OpenApp {
+    /// Creates a new `OpenApp` action with the specified parameters.
+    pub fn new(app_id: i32, owner_id: i32, hash: String) -> Self {
+        OpenApp {
+            event_type: "open_app",
+            app_id,
+            owner_id,
+            hash,
+        }
     }
 }

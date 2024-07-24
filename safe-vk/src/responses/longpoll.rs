@@ -1,7 +1,7 @@
 use serde::Deserialize;
 
 /// Represents the session data needed to connect to the Long Poll server
-#[derive(Deserialize, Debug, PartialEq)]
+#[derive(Deserialize, Debug)]
 pub struct LongPollSession {
     /// A secret key for the session.
     pub key: String,

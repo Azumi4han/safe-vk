@@ -6,6 +6,7 @@ publish = false
 
 [dependencies]
 serde_json = "1.0.117"
-reqwest = { version = "0.12.4", features = ["json"] }
+reqwest = { version = "0.12.4", features = ["json", "stream"] }
 safe-vk = { path = "../../safe-vk", features = ["macros"] }
 tokio = { version = "1.0", features = ["full"] }
+futures = "0.3.30"

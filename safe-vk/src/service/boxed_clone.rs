@@ -1,5 +1,7 @@
 use super::{Response, Service, ServiceExt};
+use crate::RequestBuilder;
 use futures_util::future::BoxFuture;
+use std::sync::Arc;
 
 pub struct BoxCloneService<T>(
     Box<dyn CloneService<T, Response = (), Future = BoxFuture<'static, Response<()>>> + Send>,
@@ -32,7 +34,7 @@ impl<T> Service<T> for BoxCloneService<T> {
     }
 
     #[inline]
-    fn call(&mut self, update: T, request: std::sync::Arc<crate::RequestBuilder>) -> Self::Future {
+    fn call(&mut self, update: T, request: Arc<RequestBuilder>) -> Self::Future {
         self.0.call(update, request)
     }
 }

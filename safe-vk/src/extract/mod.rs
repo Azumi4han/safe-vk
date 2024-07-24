@@ -1,10 +1,11 @@
 mod ctx;
+mod keyboard;
 mod state;
 
 use crate::RequestBuilder;
 use std::{future::Future, sync::Arc};
 
-pub use self::{ctx::Ctx, state::State};
+pub use self::{ctx::Ctx, keyboard::Keyboard, state::State};
 
 pub type Update<T = serde_json::Value> = crate::responses::Event<T>;
 

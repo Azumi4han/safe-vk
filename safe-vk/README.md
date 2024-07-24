@@ -1,5 +1,5 @@
-![Static Badge](https://img.shields.io/badge/rust%20stable-1.78.0-orange)
-![Static Badge](https://img.shields.io/badge/rust%20nightly-1.80.0-orange)
+![Static Badge](https://img.shields.io/badge/rust%20stable-1.79.0-orange)
+![Static Badge](https://img.shields.io/badge/rust%20nightly-1.82.0-orange)
 [![Crates.io](https://img.shields.io/crates/v/safe-vk)](https://crates.io/crates/safe-vk)
 
 # safe-vk
@@ -8,9 +8,10 @@ Simple library with simple API for creating your own VK bot for conversations in
 
 ## Current State
 
-This library doesn't include all VK API methods. 
-For now, it can handle simple tasks such as sending messages, 
-getting users from a conversation, and sending photos.
+This library doesn’t include all VK API methods yet, but it has enough 
+functionality to wrap around the [ComfyUI](https://github.com/comfyanonymous/ComfyUI) API
+or even the [oobabooga](https://github.com/oobabooga/text-generation-webui)
+API. See more in the [examples](examples).
 
 ## Future planning
 
@@ -19,10 +20,11 @@ getting users from a conversation, and sending photos.
 - More tests
 - Documenting code
 - Simplifying code 
+- Making a route for keyboards
 
 ## Prerequisites
 
-Ensure you have Rust stable version **1.78.0** or **nightly version 1.80.0** installed. 
+Ensure you have Rust stable version **1.79.0** or **nightly version 1.82.0** installed. 
 This library is tested and compatible with these versions.
 
 ## Overview
@@ -47,26 +49,17 @@ use safe_vk::{extract::Ctx, responses::Message, Filter, Result, SafeVk};
 use std::env;
 
 async fn reply(update: Ctx<Message>) -> Result<()> {
-    // Sending request to VK API
-    update.message_text("hello from rust! 🦀").send().await?;
+    update.messages().send().random_id(0).message("hi").await?;
     Ok(())
 }
 
 #[tokio::main]
 async fn main() {
-    let group_id: u32 = env::var("GROUP_ID")
-        .unwrap_or_else(|_| "0".into())
-        .parse()
-        .expect("GROUP_ID must be a valid u32");
-
     let token = env::var("TOKEN").expect("TOKEN environment variable not set");
 
-    // You can select Filter to change how strictly it listens to your command
-    // You can find more info in the docs
     let bot = SafeVk::new().command("/hello", reply, Filter::Strict);
 
-    // Start listening VK API
-    safe_vk::start_polling(&token, group_id, bot).await.unwrap();
+    safe_vk::start_polling(&token, bot).await.unwrap();
 }
 ```
 
@@ -76,16 +69,16 @@ For more, try to play with [examples](examples).
 To run an example, use the following command in your terminal:
 
 ```shell
-$ GROUP_ID=YOUR_GROUP_ID TOKEN=YOUR_TOKEN cargo run --example reply
-$ GROUP_ID=YOUR_GROUP_ID TOKEN=YOUR_TOKEN cargo run --example comfyui
-$ GROUP_ID=YOUR_GROUP_ID TOKEN=YOUR_TOKEN cargo run --example oobabooga
-$ GROUP_ID=YOUR_GROUP_ID TOKEN=YOUR_TOKEN cargo run --example macros
-$ GROUP_ID=YOUR_GROUP_ID TOKEN=YOUR_TOKEN cargo run --example keyboard
-$ GROUP_ID=YOUR_GROUP_ID TOKEN=YOUR_TOKEN cargo run --example members
-$ GROUP_ID=YOUR_GROUP_ID TOKEN=YOUR_TOKEN cargo run --example state
+$ TOKEN=YOUR_TOKEN cargo run --example reply
+$ TOKEN=YOUR_TOKEN cargo run --example comfyui
+$ TOKEN=YOUR_TOKEN cargo run --example oobabooga
+$ TOKEN=YOUR_TOKEN cargo run --example macros
+$ TOKEN=YOUR_TOKEN cargo run --example keyboard
+$ TOKEN=YOUR_TOKEN cargo run --example members
+$ TOKEN=YOUR_TOKEN cargo run --example state
 ```
 
-Don't forget to include your token and group ID!
+Don't forget to include your token !
 
 ## Motivation
 My primary goal with this project is to learn how to work with asynchronous code 

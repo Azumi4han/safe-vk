@@ -30,8 +30,8 @@ async fn randomize(State(state): State<Arc<Mutex<AppState>>>, update: Ctx<Messag
     state.randomize = !state.randomize;
 
     update
-        .message_text(format!("seed is randomized: {}", state.randomize))
-        .send()
+        .messages()
+        .msg(&format!("seed is randomized: {}", state.randomize))
         .await?;
 }
 
@@ -43,8 +43,8 @@ async fn seed(State(state): State<Arc<Mutex<AppState>>>, update: Ctx<Message>) {
     if let Some(number_str) = message.strip_prefix("/seed ") {
         if let Ok(number) = number_str.parse::<u16>() {
             update
-                .message_text(format!("New seed: {}", number))
-                .send()
+                .messages()
+                .msg(&format!("New seed: {}", number))
                 .await?;
             state.seed = number;
             state.randomize = false;
@@ -62,8 +62,8 @@ async fn cfg(State(state): State<Arc<Mutex<AppState>>>, update: Ctx<Message>) {
     if let Some(number_str) = message.strip_prefix("/cfg ") {
         if let Ok(number) = number_str.parse::<f32>() {
             update
-                .message_text(format!("changed from {} to {}", state.cfg, number))
-                .send()
+                .messages()
+                .msg(&format!("changed from {} to {}", state.cfg, number))
                 .await?;
             state.cfg = number;
         } else {
@@ -75,7 +75,11 @@ async fn cfg(State(state): State<Arc<Mutex<AppState>>>, update: Ctx<Message>) {
 #[auto_ok]
 async fn imagine(State(state): State<Arc<Mutex<AppState>>>, update: Ctx<Message>) {
     let mut state = state.lock().await;
-    let user = update.get_users(&[update.message.from_id]).await?;
+    let user = update
+        .users()
+        .get()
+        .user_ids(&[update.message.from_id])
+        .await?;
     let seed = if state.randomize {
         random_seed()
     } else {
@@ -112,7 +116,10 @@ async fn imagine(State(state): State<Arc<Mutex<AppState>>>, update: Ctx<Message>
     let last_name = user[0].last_name.to_string();
 
     update
-        .message_text(format!(
+        .messages()
+        .send()
+        .random_id(0)
+        .message(&format!(
             "{} {}\nID: {}\nCFG: {}\nSEED: {}",
             first_name,
             last_name,
@@ -120,7 +127,6 @@ async fn imagine(State(state): State<Arc<Mutex<AppState>>>, update: Ctx<Message>
             state.cfg,
             state.seed,
         ))
-        .send()
         .await?;
 
     let response = get_history(prompt_id).await;
@@ -133,22 +139,33 @@ async fn imagine(State(state): State<Arc<Mutex<AppState>>>, update: Ctx<Message>
     )
     .await;
 
-    let photo = update.photos().upload(image, "image.png").await?;
+    let photo = update.photos().upload_image(image, "image.png").await?;
     let owner_id = photo[0].owner_id;
     let photo_id = photo[0].id;
 
     update
-        .message()
-        .attachment("photo", owner_id, photo_id)
+        .messages()
         .send()
+        .random_id(0)
+        .attachment("photo", owner_id, photo_id)
         .await?;
 }
 
 #[auto_ok]
 async fn help(update: Ctx<Message>) {
     update
-        .message_text("/g --> Generates an image\n/rnd --> Randomizes the seed\n/cfg --> Sets custom cfg\n/seed --> Use your provided seed only")
-        .send()
+        .messages()
+        .msg(
+            "
+            /g --> Generates an image
+
+            /rnd --> Randomizes the seed
+
+            /cfg --> Sets custom cfg
+
+            /seed --> Use your provided seed only
+        ",
+        )
         .await?;
 }
 
@@ -199,11 +216,6 @@ async fn get_image(filename: &str, subfolder: &str, folder_type: &str) -> Vec<u8
 
 #[tokio::main]
 async fn main() {
-    let group_id: u32 = env::var("GROUP_ID")
-        .unwrap_or_else(|_| "0".into())
-        .parse()
-        .expect("GROUP_ID must be a valid u32");
-
     let token = env::var("TOKEN").expect("TOKEN environment variable not set");
 
     let file = File::open("examples/comfyui/workflow_api.json").unwrap();
@@ -225,5 +237,5 @@ async fn main() {
         .command("/seed", seed, Filter::Sensitive)
         .with_state(Arc::new(Mutex::new(app_state)));
 
-    safe_vk::start_polling(&token, group_id, bot).await.unwrap();
+    safe_vk::start_polling(&token, bot).await.unwrap();
 }

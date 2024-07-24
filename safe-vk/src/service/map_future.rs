@@ -1,7 +1,8 @@
 use super::Service;
-use crate::Response;
+use crate::{RequestBuilder, Response};
 use std::{
     future::Future,
+    sync::Arc,
     task::{Context, Poll},
 };
 
@@ -30,7 +31,7 @@ where
         self.inner.poll_ready(cx).map_err(From::from)
     }
 
-    fn call(&mut self, update: R, request: std::sync::Arc<crate::RequestBuilder>) -> Self::Future {
+    fn call(&mut self, update: R, request: Arc<RequestBuilder>) -> Self::Future {
         (self.f)(self.inner.call(update, request))
     }
 }

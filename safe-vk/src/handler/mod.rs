@@ -45,9 +45,10 @@ macro_rules! impl_handler {
             fn call(self, update: Update, state: S, request: Arc<RequestBuilder>) -> Self::Future {
                 Box::pin(async move {
                     let state = &state;
+                    let req = update;
 
                      $(
-                        let $ty = $ty::from_update(update.clone(), state, request.clone()).await.unwrap();
+                        let $ty = $ty::from_update(req.clone(), state, request.clone()).await.unwrap();
                      )*
 
 

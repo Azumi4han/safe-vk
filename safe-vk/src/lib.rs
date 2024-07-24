@@ -79,7 +79,6 @@
 )]
 #![deny(unreachable_pub)]
 #![allow(elided_lifetimes_in_paths, clippy::type_complexity)]
-#![forbid(unsafe_code)]
 #![cfg_attr(docsrs, feature(doc_auto_cfg, doc_cfg))]
 #![cfg_attr(test, allow(clippy::float_cmp))]
 #![cfg_attr(not(test), warn(clippy::print_stdout, clippy::dbg_macro))]
@@ -99,7 +98,7 @@ pub mod service;
 pub mod start_polling;
 pub use safe_vk_common::*;
 
-pub use self::reqwest_ext::{RequestBuilder, VERSION, VK};
+pub use self::reqwest_ext::{RequestBuilder, VERSION, VK, WAIT_TIME};
 pub use self::routing::SafeVk;
 
 #[cfg(feature = "macros")]
@@ -113,12 +112,23 @@ pub type Response<T> = Result<T>;
 
 #[macro_export]
 macro_rules! parse_response {
+    ($value:expr, Option<$type:ty>) => {{
+        use serde::de::Error;
+        let response_value: Result<Option<$type>> = match $value.get("response") {
+            Some(response) => match <$type as serde::Deserialize>::deserialize(response) {
+                Ok(parsed) => Ok(Some(parsed)),
+                Err(_) => Ok(None),
+            },
+            None => Ok(None),
+        };
+        response_value.map_err(|e| serde_json::Error::custom(e))
+    }};
     ($value:expr, $type:ty) => {{
         use serde::de::Error;
         let response_value = match $value.get("response") {
             Some(response) => <$type as serde::Deserialize>::deserialize(response),
             None => serde_json::from_value($value),
         };
-        response_value.map_err(|e| serde_json::Error::custom(e.to_string()))
+        response_value.map_err(|e| serde_json::Error::custom(e))
     }};
 }

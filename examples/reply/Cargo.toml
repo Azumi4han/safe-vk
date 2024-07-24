@@ -5,5 +5,7 @@ edition = "2021"
 publish = false
 
 [dependencies]
-safe-vk = { path = "../../safe-vk" }
-tokio = { version = "1.0", features = ["full"] }
+safe-vk = { path = "../../safe-vk", features = ["macros"] }
+serde_json = "1.0.117"
+serde = "1.0.203"
+tokio = { version = "1", features = ["full"] }

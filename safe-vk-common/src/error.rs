@@ -167,6 +167,10 @@ pub enum Error {
     #[error("VK API error: {0}")]
     VkApi(#[from] VkError),
 
+    /// Error to be used when `peer_id` is not found in callback from VK
+    #[error("peer_id not found in VK response")]
+    PeerIdNotFound,
+
     #[error("Unexpected JSON response: {0}")]
     UnexpectedResponse(String),
 
@@ -180,7 +184,7 @@ pub enum Error {
     Reqwest(#[from] reqwest::Error),
 
     #[error("Dimension index {dim} exceeds the maximum allowed shape dimensions (5x10) for shape {shape:?}")]
-    DimOutOfRange { shape: Shape, dim: i32 },
+    DimOutOfRange { shape: Shape, dim: usize },
 
     /// Indicates that the listener for a specific command was not found.
     #[error("Listener not found")]

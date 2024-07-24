@@ -32,7 +32,7 @@ pub(crate) trait ErasedIntoRoute<S>: Send {
 
     fn into_route(self: Box<Self>, state: S) -> Route;
 
-    #[allow(unused)]
+    #[allow(dead_code)]
     fn call_with_state(
         self: Box<Self>,
         update: Update,
@@ -69,6 +69,7 @@ where
     }
 }
 
+#[allow(dead_code)]
 pub(crate) struct MakeErasedRouter<S> {
     pub(crate) router: SafeVk<S>,
     pub(crate) into_route: fn(SafeVk<S>, S) -> Route,

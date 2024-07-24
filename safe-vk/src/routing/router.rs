@@ -15,6 +15,7 @@ pub(super) struct Listener<S> {
 #[must_use]
 pub struct MethodListener<S = ()> {
     command: MethodEndpoint<S>,
+    keyboard: MethodEndpoint<S>,
     any: MethodEndpoint<S>,
 }
 
@@ -109,6 +110,7 @@ where
     pub fn new() -> Self {
         Self {
             command: MethodEndpoint::None,
+            keyboard: MethodEndpoint::None,
             any: MethodEndpoint::None,
         }
     }
@@ -140,6 +142,7 @@ where
     pub fn with_state<S2>(self, state: S) -> MethodListener<S2> {
         MethodListener {
             command: self.command.with_state(&state),
+            keyboard: self.keyboard.with_state(&state),
             any: self.any.with_state(&state),
         }
     }
@@ -171,6 +174,7 @@ where
         }
 
         self.command = merge_inner(method, "COMMAND", self.command, other.command);
+        self.keyboard = merge_inner(method, "KEYBOARD", self.keyboard, other.keyboard);
         self.any = merge_inner(method, "ANY", self.any, other.any);
 
         self
@@ -201,9 +205,14 @@ where
             };
         }
 
-        let Self { command, any } = self;
+        let Self {
+            command,
+            keyboard,
+            any,
+        } = self;
 
         call!(update, command, request);
+        call!(update, keyboard, request);
         call!(update, any, request);
 
         RouteFuture::dummy()
@@ -251,6 +260,7 @@ impl<S: 'static> Clone for MethodListener<S> {
     fn clone(&self) -> Self {
         Self {
             command: self.command.clone(),
+            keyboard: self.keyboard.clone(),
             any: self.any.clone(),
         }
     }
@@ -302,6 +312,7 @@ impl Node {
                         })
                     })
                 }),
+                //TODO: Make keyboard as route
                 _ => None,
             })
             .next();

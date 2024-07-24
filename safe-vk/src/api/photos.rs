@@ -1,4 +1,6 @@
+use super::Write;
 use crate::{
+    api_func, chained_method_fn,
     extract::{Ctx, Update},
     parse_response,
     responses::{
@@ -12,93 +14,85 @@ use reqwest::{
     multipart::{Form, Part},
     Client,
 };
-use std::sync::Arc;
+use std::{fmt, future::IntoFuture, sync::Arc};
 
 pub struct PhotosBuilder {
     request: Arc<RequestBuilder>,
-    values: Vec<(&'static str, String)>,
+    _peer_id: i64,
 }
 
+chained_method_fn!(
+    MessageUploadServer,
+    GetMessagesUploadServer,
+    "photos.getMessagesUploadServer",
+    peer_id(i64)
+);
+
+chained_method_fn!(
+    SaveMessagesPhoto,
+    Vec<Photo>,
+    "photos.saveMessagesPhoto",
+    server(i32),
+    hash(&str),
+    photo(&str)
+);
+
 impl PhotosBuilder {
-    pub fn new(request: Arc<RequestBuilder>, peer_id: String) -> Self {
-        let values = Vec::from([("peer_id", peer_id)]);
-        PhotosBuilder { request, values }
+    fn new(request: Arc<RequestBuilder>, _peer_id: i64) -> PhotosBuilder {
+        PhotosBuilder { request, _peer_id }
     }
 
-    pub async fn get_message_upload(&self) -> Result<GetMessagesUploadServer> {
-        let response = self
-            .request
-            .post(VK, "photos.getMessagesUploadServer", (), &self.values)
-            .await?;
-
-        Ok(parse_response!(response, GetMessagesUploadServer)?)
+    pub fn get_messages_upload_server(&self) -> MessageUploadServer {
+        let request = Arc::clone(&self.request);
+        MessageUploadServer::new(request, None)
     }
 
-    pub async fn save_message_photo(
-        &self,
-        photo: String,
-        server: i32,
-        hash: String,
-    ) -> Result<Vec<Photo>> {
-        let response = self
-            .request
-            .post(
-                VK,
-                "photos.saveMessagesPhoto",
-                &[
-                    ("photo", photo),
-                    ("server", server.to_string()),
-                    ("hash", hash),
-                ],
-                {},
-            )
-            .await?;
-
-        Ok(parse_response!(response, Vec<Photo>)?)
+    pub fn save_messages_photo(&self) -> SaveMessagesPhoto {
+        let request = Arc::clone(&self.request);
+        SaveMessagesPhoto::new(request, None)
     }
 
-    pub async fn upload(&self, image: Vec<u8>, filename: impl Into<String>) -> Result<Vec<Photo>> {
-        let response = self.get_message_upload().await?;
-
-        let filename = &filename.into();
+    pub async fn upload_image(&self, image: Vec<u8>, filename: &str) -> Result<Vec<Photo>> {
+        let upload_server = self.get_messages_upload_server().await?;
 
         let file_type = filename.rsplit_once('.').map(|(_, ext)| ext).unwrap_or("");
+        let mime_type = format!("image/{}", file_type);
 
-        let image = Part::stream(image)
-            .file_name(filename.clone())
-            .mime_str(&format!("image/{file_type}"))?;
+        let image_part = Part::stream(image)
+            .file_name(filename.to_string())
+            .mime_str(&mime_type)?;
 
-        let response = Client::new()
-            .post(response.upload_url)
-            .multipart(Form::new().part("photo", image))
+        let client = Client::new();
+        let form = Form::new().part("photo", image_part);
+
+        let response = client
+            .post(&upload_server.upload_url)
+            .multipart(form)
             .send()
-            .await
-            .unwrap()
+            .await?
             .json::<serde_json::Value>()
-            .await
-            .unwrap();
-
-        let response = parse_response!(response, UploadImage)?;
-
-        let response = self
-            .save_message_photo(response.photo, response.server, response.hash)
             .await?;
 
-        Ok(response)
+        let parsed = parse_response!(response, UploadImage)?;
+
+        self.save_messages_photo()
+            .photo(&parsed.photo)
+            .server(parsed.server)
+            .hash(&parsed.hash)
+            .await
     }
 }
 
 impl Ctx<Message> {
     pub fn photos(&self) -> PhotosBuilder {
-        let peer_id = self.message.peer_id.to_string();
+        let peer_id = self.message.peer_id;
         PhotosBuilder::new(self.request.clone(), peer_id)
     }
 }
 
 impl Ctx<Update> {
     pub fn photos(&self) -> Result<PhotosBuilder> {
-        let object = self.object.get("message").unwrap();
-        let peer_id = object.get("peer_id").unwrap().to_string();
+        let peer_id = self.find_peer_id(&self.object)?;
         Ok(PhotosBuilder::new(self.request.clone(), peer_id))
     }
 }
