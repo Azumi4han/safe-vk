@@ -1,4 +1,4 @@
-use futures::StreamExt;
+use futures_util::StreamExt;
 use safe_vk::{
     auto_ok,
     extract::{Ctx, State},
