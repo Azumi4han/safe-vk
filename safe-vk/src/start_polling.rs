@@ -1,4 +1,4 @@
-use crate::{extract::Update, service::Service, RequestBuilder, Response};
+use crate::{extract::Update, service::Service, Error, RequestBuilder, Response};
 use std::{
     future::{poll_fn, Future, IntoFuture},
     marker::PhantomData,
@@ -40,33 +40,55 @@ where
     fn into_future(self) -> Self::IntoFuture {
         PollFuture(Box::pin(async move {
             let Self {
-                mut request,
+                request,
                 mut safevk,
                 _marker: _,
             } = self;
 
-            let longpoll = request.get_long_poll_server().await?;
+            let group_id = request.get_group_id().await?;
             let request = Arc::new(request);
 
             loop {
-                let res = request.build_long_poll_request(&longpoll).await?;
+                match request.build_long_poll_request(group_id).await {
+                    Ok(res) => {
+                        if let Some(updates) = res.updates {
+                            for event in updates {
+                                poll_fn(|cx| <M as Service<Update>>::poll_ready(&mut safevk, cx))
+                                    .await
+                                    .unwrap();
 
-                if let Some(updates) = res.updates {
-                    for event in updates {
-                        poll_fn(|cx| <M as Service<Update>>::poll_ready(&mut safevk, cx))
-                            .await
-                            .unwrap();
+                                let request_clone = Arc::clone(&request);
+                                let mut safevk = safevk.clone();
 
-                        let request_clone = Arc::clone(&request);
-                        let mut safevk = safevk.clone();
-
-                        let _: tokio::task::JoinHandle<Response<()>> = tokio::spawn(async move {
-                            match safevk.call(event, request_clone).await {
-                                Ok(..) => Ok(()),
-                                Err(err) => panic!("{err}"),
+                                let _: tokio::task::JoinHandle<Response<()>> =
+                                    tokio::spawn(async move {
+                                        match safevk.call(event, request_clone).await {
+                                            Ok(..) => Ok(()),
+                                            Err(err) => panic!("{err}"),
+                                        }
+                                    });
                             }
-                        });
+                        }
                     }
+                    Err(Error::EventsOutdated { new_ts }) => request.update_ts(new_ts).await,
+                    Err(Error::KeyExpired) => match request.get_long_poll_server(group_id).await {
+                        Ok(new_session) => request.update_session(new_session).await,
+                        Err(err) => {
+                            eprintln!("Failed to fetch new long poll server session: {err}");
+                        }
+                    },
+                    Err(Error::InformationLost) => {
+                        match request.get_long_poll_server(group_id).await {
+                            Ok(new_session) => {
+                                request.update_ts(new_session.ts.clone()).await;
+                                request.update_session(new_session).await;
+                            }
+                            Err(err) => {
+                                eprintln!("Failed to fetch new long poll server session: {err}")
+                            }
+                        }
+                    }
+                    Err(err) => eprintln!("Error occured: {err}"),
                 }
             }
         }))

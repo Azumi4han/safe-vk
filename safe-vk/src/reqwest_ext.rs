@@ -20,6 +20,7 @@ pub struct RequestBuilder {
     client: reqwest::Client,
     access_token: String,
     _ts: Arc<Mutex<Option<String>>>,
+    _session: Arc<Mutex<Option<LongPollSession>>>,
 }
 
 pub const VK: &'static str = "https://api.vk.com/method";
@@ -76,12 +77,19 @@ impl RequestBuilder {
             client: reqwest::Client::new(),
             access_token: access_token.into(),
             _ts: Arc::new(Mutex::new(None)),
+            _session: Arc::new(Mutex::new(None)),
         }
     }
 
-    pub(crate) async fn get_long_poll_server(&mut self) -> Result<LongPollSession> {
-        let group_id = self.get_group_id().await?;
+    pub async fn update_session(&self, new_session: LongPollSession) {
+        *self._session.lock().await = Some(new_session)
+    }
 
+    pub async fn update_ts(&self, new_ts: String) {
+        *self._ts.lock().await = Some(new_ts);
+    }
+
+    pub(crate) async fn get_long_poll_server(&self, group_id: u64) -> Result<LongPollSession> {
         let response = parse_response!(
             self.post(
                 VK,
@@ -107,16 +115,17 @@ impl RequestBuilder {
         Ok(group_id)
     }
 
-    pub async fn build_long_poll_request(
-        &self,
-        longpoll: &LongPollSession,
-    ) -> Result<LongPollResponse<Value>> {
+    pub async fn build_long_poll_request(&self, group_id: u64) -> Result<LongPollResponse<Value>> {
         let mut prev_ts = self._ts.lock().await;
 
-        let ts = match &*prev_ts {
-            Some(t) => t,
-            None => &longpoll.ts,
-        };
+        let mut session_guard = self._session.lock().await;
+        if session_guard.is_none() {
+            let new_session = self.get_long_poll_server(group_id).await?;
+            *session_guard = Some(new_session);
+        }
+
+        let longpoll = session_guard.as_ref().unwrap();
+        let ts = prev_ts.as_ref().unwrap_or(&longpoll.ts);
 
         let query = format!(
             "act=a_check&key={}&ts={}&wait={}&version=3",
