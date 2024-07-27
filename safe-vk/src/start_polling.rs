@@ -15,9 +15,8 @@ pub struct Polling<M, S> {
 
 pub fn start_polling<M, S>(token: &str, safevk: M) -> Polling<M, S>
 where
-    M: Service<(), Response = S>,
-    S: Service<Update, Response = ()> + Clone + Send + 'static,
-    S::Future: Send,
+    M: Service<Update, Response = ()> + Send + Clone + 'static,
+    <M as Service<Update>>::Future: Send,
 {
     let request = RequestBuilder::new(token);
     Polling {
@@ -29,10 +28,8 @@ where
 
 impl<M, S> IntoFuture for Polling<M, S>
 where
-    M: Service<(), Response = S> + Send + Clone + 'static + Service<Update>,
+    M: Service<Update, Response = S> + Send + Clone + 'static,
     <M as Service<Update>>::Future: Send,
-    S: Service<Update, Response = ()> + Clone + Send + 'static,
-    S::Future: Send,
 {
     type Output = Response<()>;
     type IntoFuture = PollFuture;
@@ -53,9 +50,7 @@ where
                     Ok(res) => {
                         if let Some(updates) = res.updates {
                             for event in updates {
-                                poll_fn(|cx| <M as Service<Update>>::poll_ready(&mut safevk, cx))
-                                    .await
-                                    .unwrap();
+                                poll_fn(|cx| safevk.poll_ready(cx)).await.unwrap();
 
                                 let request_clone = Arc::clone(&request);
                                 let mut safevk = safevk.clone();
