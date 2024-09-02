@@ -27,7 +27,7 @@ futures-util = { version = "0.3", default-features = false, features = ["alloc"]
 tokio = { package = "tokio", version = "1.35.1", optional = true }
 safe-vk-macros = { path = "../safe-vk-macros", version = "0.1.0", optional = true }
 safe-vk-common = { path = "../safe-vk-common", version = "0.1.1" }
-serde = { version = "1.0.195", features = ["derive", "rc"] }
+serde = { version = "1", features = ["derive", "rc"] }
 reqwest = { version = "0.11.23", features = ["multipart", "json"]  }
 pin-project-lite = "0.2.7"
 futures-core = "0.3.30"

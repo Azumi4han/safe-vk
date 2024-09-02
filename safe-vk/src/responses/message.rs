@@ -37,6 +37,8 @@ pub struct ReplyMessage<T> {
     pub text: String,
     /// Media attachments in the message (photos, links, etc.).
     pub attachments: Vec<Attachment<T>>,
+    /// Unique automatically increasing number for all messages with this peer.
+    pub conversation_message_id: i32,
     /// Service field for bot messages (payload).
     pub payload: Option<String>,
 }

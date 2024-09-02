@@ -1,7 +1,7 @@
 //! Functions that interacts with VK API
 use crate::{
     api::Write,
-    api_func, chained_method_fn,
+    api_func, builder_methods, chained_method_fn,
     extract::{Ctx, Update},
     parse_response,
     responses::{events::MessageSendResult, EventAnswer, Members, Message},
@@ -9,11 +9,6 @@ use crate::{
 };
 use serde::Serialize;
 use std::{fmt, future::IntoFuture, sync::Arc};
-
-pub struct MessageBuilder {
-    request: Arc<RequestBuilder>,
-    peer_id: i64,
-}
 
 chained_method_fn!(
     GetMember,
@@ -169,35 +164,17 @@ impl SendMessage {
     }
 }
 
-impl MessageBuilder {
-    fn new(request: Arc<RequestBuilder>, peer_id: i64) -> MessageBuilder {
-        MessageBuilder { request, peer_id }
-    }
+use super::Builder;
 
-    pub fn send(&self) -> SendMessage {
-        let request = Arc::clone(&self.request);
-        SendMessage::new(request, Some(self.peer_id))
-    }
+pub type MessageBuilder = Builder<Message>;
 
-    pub fn edit(&self) -> EditMessage {
-        let request = Arc::clone(&self.request);
-        EditMessage::new(request, Some(self.peer_id))
-    }
-
-    pub fn send_message_event_answer(&self) -> SendMessageEventAnswer {
-        let request = Arc::clone(&self.request);
-        SendMessageEventAnswer::new(request, Some(self.peer_id))
-    }
-
-    pub fn members(&self) -> GetMember {
-        let request = Arc::clone(&self.request);
-        GetMember::new(request, Some(self.peer_id))
-    }
-
-    // Shortcuts
-    pub async fn msg(&self, message: &str) -> Result<()> {
-        self.send().random_id(0).message(message).await.map(|_| ())
-    }
+impl Builder<Message> {
+    builder_methods!(
+        send -> SendMessage,
+        edit -> EditMessage,
+        send_message_event_answer -> SendMessageEventAnswer,
+        members -> GetMember
+    );
 }
 
 impl Ctx<Message> {

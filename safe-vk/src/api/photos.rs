@@ -1,6 +1,6 @@
 use super::Write;
 use crate::{
-    api_func, chained_method_fn,
+    api_func, builder_methods, chained_method_fn,
     extract::{Ctx, Update},
     parse_response,
     responses::{
@@ -18,7 +18,7 @@ use std::{fmt, future::IntoFuture, sync::Arc};
 
 pub struct PhotosBuilder {
     request: Arc<RequestBuilder>,
-    _peer_id: i64,
+    peer_id: i64,
 }
 
 chained_method_fn!(
@@ -38,19 +38,14 @@ chained_method_fn!(
 );
 
 impl PhotosBuilder {
-    fn new(request: Arc<RequestBuilder>, _peer_id: i64) -> PhotosBuilder {
-        PhotosBuilder { request, _peer_id }
+    fn new(request: Arc<RequestBuilder>, peer_id: i64) -> PhotosBuilder {
+        PhotosBuilder { request, peer_id }
     }
 
-    pub fn get_messages_upload_server(&self) -> MessageUploadServer {
-        let request = Arc::clone(&self.request);
-        MessageUploadServer::new(request, None)
-    }
-
-    pub fn save_messages_photo(&self) -> SaveMessagesPhoto {
-        let request = Arc::clone(&self.request);
-        SaveMessagesPhoto::new(request, None)
-    }
+    builder_methods!(
+        get_messages_upload_server -> MessageUploadServer,
+        save_messages_photo -> SaveMessagesPhoto
+    );
 
     pub async fn upload_image(&self, image: Vec<u8>, filename: &str) -> Result<Vec<Photo>> {
         let upload_server = self.get_messages_upload_server().await?;

@@ -30,6 +30,7 @@ impl<M, S> IntoFuture for Polling<M, S>
 where
     M: Service<Update, Response = S> + Send + Clone + 'static,
     <M as Service<Update>>::Future: Send,
+    S: Send + Clone + 'static,
 {
     type Output = Response<()>;
     type IntoFuture = PollFuture;

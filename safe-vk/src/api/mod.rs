@@ -1,8 +1,26 @@
+use crate::RequestBuilder;
 use std::fmt;
+use std::sync::Arc;
 
 pub mod messages;
 pub mod photos;
 pub mod users;
+
+pub struct Builder<T> {
+    request: Arc<RequestBuilder>,
+    peer_id: i64,
+    _marker: std::marker::PhantomData<T>,
+}
+
+impl<T> Builder<T> {
+    pub fn new(request: Arc<RequestBuilder>, peer_id: i64) -> Self {
+        Self {
+            request,
+            peer_id,
+            _marker: std::marker::PhantomData,
+        }
+    }
+}
 
 pub trait Write {
     fn write(&mut self, arg: &[u8]);
@@ -202,5 +220,17 @@ macro_rules! chained_method_fn {
                 })
             }
         }
+    };
+}
+
+#[macro_export]
+macro_rules! builder_methods {
+    ($($method_name:ident -> $return_type:ty),*) => {
+        $(
+            pub fn $method_name(&self) -> $return_type {
+                let request = Arc::clone(&self.request);
+                <$return_type>::new(request, Some(self.peer_id))
+            }
+        )*
     };
 }

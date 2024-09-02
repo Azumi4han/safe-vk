@@ -1,8 +1,10 @@
 use super::message::Geo;
 use crate::Button;
-use serde::Deserialize;
+use serde::de::{self, MapAccess, Visitor};
+use serde::{Deserialize, Deserializer};
+use std::fmt;
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Clone)]
 pub struct Attachment<T> {
     /// Type of the attachment. Possible values are:
     /// - "photo" for photographs
@@ -16,7 +18,6 @@ pub struct Attachment<T> {
     /// - "wall_reply" for comments on wall posts
     /// - "sticker" for stickers
     /// - "gift" for gifts
-    #[serde(rename = "type")]
     pub attachment_type: String,
     /// Depending on the `type`, this field contains an object representing the attachment.
     /// The structure of this object varies by `type`.
@@ -25,7 +26,6 @@ pub struct Attachment<T> {
 
 /// Enum to represent all possible types of attachments in a personal message.
 #[derive(Debug, Deserialize, Clone)]
-#[serde(tag = "type")]
 pub enum AttachmentItem<T> {
     Photo(Photo),
     Video(Video),
@@ -43,8 +43,8 @@ pub enum AttachmentItem<T> {
 pub struct Photo {
     pub id: i64,
     pub album_id: i32,
-    pub owner_id: i64,
-    pub user_id: i32,
+    pub owner_id: i32,
+    pub user_id: Option<i32>,
     pub text: String,
     pub date: i64,
     pub sizes: Vec<PhotoSize>,
@@ -72,7 +72,7 @@ pub struct Video {
     /// Title of the video.
     pub title: String,
     /// Description of the video.
-    pub description: String,
+    pub description: Option<String>,
     /// Duration of the video in seconds.
     pub duration: i32,
     /// Cover image of the video. This is an array of objects, each with height, url, and width properties.
@@ -147,7 +147,7 @@ pub struct Doc {
     /// Title of the document.
     pub title: String,
     /// Size of the document in bytes.
-    pub size: i64,
+    pub size: isize,
     /// Extension of the document.
     pub ext: String,
     /// URL of the document, where it can be downloaded.
@@ -413,4 +413,99 @@ pub struct WallPostDonut {
     pub paid_duration: Option<i32>,
     pub can_publish_free_copy: bool,
     pub edit_mode: String,
+}
+
+impl<'de, T> Deserialize<'de> for Attachment<T>
+where
+    T: Deserialize<'de>,
+{
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        struct AttachmentVisitor<T>(std::marker::PhantomData<T>);
+
+        impl<'de, T> Visitor<'de> for AttachmentVisitor<T>
+        where
+            T: Deserialize<'de>,
+        {
+            type Value = Attachment<T>;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                formatter.write_str("struct Attachment")
+            }
+
+            fn visit_map<V>(self, mut map: V) -> Result<Self::Value, V::Error>
+            where
+                V: MapAccess<'de>,
+            {
+                let mut attachment_type: Option<String> = None;
+                let mut item: Option<AttachmentItem<T>> = None;
+
+                while let Some(key) = map.next_key::<String>()? {
+                    if key == "type" {
+                        if attachment_type.is_some() {
+                            return Err(de::Error::duplicate_field("type"));
+                        }
+                        attachment_type = Some(map.next_value()?);
+                    } else {
+                        if attachment_type.is_none() {
+                            return Err(de::Error::missing_field("type"));
+                        }
+
+                        let attachment_type_ref = attachment_type.as_ref().unwrap();
+                        match attachment_type_ref.as_str() {
+                            "photo" => {
+                                item = Some(AttachmentItem::Photo(map.next_value()?));
+                            }
+                            "video" => {
+                                item = Some(AttachmentItem::Video(map.next_value()?));
+                            }
+                            "audio" => {
+                                item = Some(AttachmentItem::Audio(map.next_value()?));
+                            }
+                            "doc" => {
+                                item = Some(AttachmentItem::Doc(map.next_value()?));
+                            }
+                            "link" => {
+                                item = Some(AttachmentItem::Link(map.next_value()?));
+                            }
+                            "market" => {
+                                item = Some(AttachmentItem::Market(map.next_value()?));
+                            }
+                            "wall" => {
+                                item = Some(AttachmentItem::Wall(map.next_value()?));
+                            }
+                            "sticker" => {
+                                item = Some(AttachmentItem::Sticker(map.next_value()?));
+                            }
+                            "gift" => {
+                                item = Some(AttachmentItem::Gift(map.next_value()?));
+                            }
+                            _ => {
+                                return Err(de::Error::unknown_field(
+                                    &key,
+                                    &[
+                                        "photo", "video", "audio", "doc", "link", "market", "wall",
+                                        "sticker", "gift",
+                                    ],
+                                ))
+                            }
+                        }
+                    }
+                }
+
+                let attachment_type =
+                    attachment_type.ok_or_else(|| de::Error::missing_field("type"))?;
+                let item = item.ok_or_else(|| de::Error::missing_field("item"))?;
+
+                Ok(Attachment {
+                    attachment_type,
+                    item,
+                })
+            }
+        }
+
+        deserializer.deserialize_map(AttachmentVisitor(std::marker::PhantomData))
+    }
 }
