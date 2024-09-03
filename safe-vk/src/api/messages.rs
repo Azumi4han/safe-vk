@@ -80,7 +80,7 @@ impl EditMessage {
         self
     }
 
-    pub fn attachment(mut self, media_type: &str, owner_id: i64, media_id: i64) -> Self {
+    pub fn attachment(mut self, media_type: &str, owner_id: i32, media_id: i64) -> Self {
         self.arg_fmt(
             "attachment",
             format_args!("{media_type}{owner_id}_{media_id}"),
@@ -121,7 +121,7 @@ impl SendMessage {
         self
     }
 
-    pub fn attachment(mut self, media_type: &str, owner_id: i64, media_id: i64) -> Self {
+    pub fn attachment(mut self, media_type: &str, owner_id: i32, media_id: i64) -> Self {
         self.arg_fmt(
             "attachment",
             format_args!("{media_type}{owner_id}_{media_id}"),

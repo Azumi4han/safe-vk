@@ -31,7 +31,9 @@ async fn randomize(State(state): State<Arc<Mutex<AppState>>>, update: Ctx<Messag
 
     update
         .messages()
-        .msg(&format!("seed is randomized: {}", state.randomize))
+        .send()
+        .random_id(0)
+        .message(&format!("seed is randomized: {}", state.randomize))
         .await?;
 }
 
@@ -44,7 +46,9 @@ async fn seed(State(state): State<Arc<Mutex<AppState>>>, update: Ctx<Message>) {
         if let Ok(number) = number_str.parse::<u16>() {
             update
                 .messages()
-                .msg(&format!("New seed: {}", number))
+                .send()
+                .random_id(0)
+                .message(&format!("New seed: {}", number))
                 .await?;
             state.seed = number;
             state.randomize = false;
@@ -63,7 +67,9 @@ async fn cfg(State(state): State<Arc<Mutex<AppState>>>, update: Ctx<Message>) {
         if let Ok(number) = number_str.parse::<f32>() {
             update
                 .messages()
-                .msg(&format!("changed from {} to {}", state.cfg, number))
+                .send()
+                .random_id(0)
+                .message(&format!("changed from {} to {}", state.cfg, number))
                 .await?;
             state.cfg = number;
         } else {
@@ -155,14 +161,13 @@ async fn imagine(State(state): State<Arc<Mutex<AppState>>>, update: Ctx<Message>
 async fn help(update: Ctx<Message>) {
     update
         .messages()
-        .msg(
+        .send()
+        .random_id(0)
+        .message(
             "
             /g --> Generates an image
-
             /rnd --> Randomizes the seed
-
             /cfg --> Sets custom cfg
-
             /seed --> Use your provided seed only
         ",
         )
