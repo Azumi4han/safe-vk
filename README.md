@@ -1,5 +1,5 @@
-![Static Badge](https://img.shields.io/badge/rust%20stable-1.79.0-orange)
-![Static Badge](https://img.shields.io/badge/rust%20nightly-1.82.0-orange)
+![Static Badge](https://img.shields.io/badge/rust%20stable-1.82.0-orange)
+![Static Badge](https://img.shields.io/badge/rust%20nightly-1.84.0-orange)
 [![Crates.io](https://img.shields.io/crates/v/safe-vk)](https://crates.io/crates/safe-vk)
 
 # safe-vk
