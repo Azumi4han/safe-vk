@@ -14,6 +14,9 @@ use std::{
 };
 use tokio::sync::Mutex;
 
+mod custom_bindings;
+use custom_bindings::*;
+
 const SERVER: &'static str = "127.0.0.1:8188";
 
 #[derive(Clone)]
@@ -31,9 +34,7 @@ async fn randomize(State(state): State<Arc<Mutex<AppState>>>, update: Ctx<Messag
 
     update
         .messages()
-        .send()
-        .random_id(0)
-        .message(&format!("seed is randomized: {}", state.randomize))
+        .send_message(&format!("seed is randomized: {}", state.randomize))
         .await?;
 }
 
@@ -46,9 +47,7 @@ async fn seed(State(state): State<Arc<Mutex<AppState>>>, update: Ctx<Message>) {
         if let Ok(number) = number_str.parse::<u16>() {
             update
                 .messages()
-                .send()
-                .random_id(0)
-                .message(&format!("New seed: {}", number))
+                .send_message(&format!("New seed: {}", number))
                 .await?;
             state.seed = number;
             state.randomize = false;
@@ -67,9 +66,7 @@ async fn cfg(State(state): State<Arc<Mutex<AppState>>>, update: Ctx<Message>) {
         if let Ok(number) = number_str.parse::<f32>() {
             update
                 .messages()
-                .send()
-                .random_id(0)
-                .message(&format!("changed from {} to {}", state.cfg, number))
+                .send_message(&format!("changed from {} to {}", state.cfg, number))
                 .await?;
             state.cfg = number;
         } else {

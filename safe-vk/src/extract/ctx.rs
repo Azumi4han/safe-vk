@@ -44,7 +44,6 @@ impl<T> Ctx<T> {
         Ctx { request, body }
     }
 }
-
 impl<T> std::ops::Deref for Ctx<T> {
     type Target = T;
 

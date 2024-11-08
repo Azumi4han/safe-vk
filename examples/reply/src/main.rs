@@ -1,9 +1,14 @@
-use safe_vk::{extract::Ctx, responses::Message, Filter, Result, SafeVk};
+use safe_vk::{auto_ok, extract::Ctx, responses::Message, Filter, SafeVk};
 use std::env;
 
-async fn reply(update: Ctx<Message>) -> Result<()> {
-    update.messages().send().random_id(0).message("hi").await?;
-    Ok(())
+#[auto_ok]
+async fn reply(update: Ctx<Message>) {
+    update
+        .messages()
+        .send()
+        .random_id(0)
+        .message("hi from 🦀")
+        .await?;
 }
 
 #[tokio::main]

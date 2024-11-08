@@ -4,7 +4,7 @@ use serde::Deserialize;
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct Message<T = ()> {
-    pub client_info: ClientInfo,
+    pub client_info: Option<ClientInfo>,
     pub message: PersonalMessage<T>,
 }
 

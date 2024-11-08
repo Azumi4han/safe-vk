@@ -60,7 +60,6 @@ macro_rules! request {
                 .await?;
 
             let json: Value = response.json().await?;
-
             if let Some(err) = json.get("error") {
                 return Err(Error::VkApi(VkError::from_vk_error_json(err)));
             }
@@ -128,7 +127,7 @@ impl RequestBuilder {
         let ts = prev_ts.as_ref().unwrap_or(&longpoll.ts);
 
         let query = format!(
-            "act=a_check&key={}&ts={}&wait={}&version=3",
+            "act=a_check&key={}&ts={}&wait={}",
             longpoll.key, ts, WAIT_TIME
         );
 

@@ -30,11 +30,14 @@ async fn update_message(update: &Ctx<Message>, message: &str, message_id: i32, p
 #[auto_ok]
 async fn answer(State(state): State<Arc<Mutex<AppState>>>, update: Ctx<Message>) {
     let mut state = state.lock().await;
+
     if let Some(reply) = &update.message.reply_message {
-        reply.from_id < 0
+        if reply.from_id > 0 {
+            return Ok(());
+        }
     } else {
         return Ok(());
-    };
+    }
 
     let message = &update.message.text;
     let data = json!({"role": "user", "content": message});
@@ -90,7 +93,7 @@ async fn answer(State(state): State<Arc<Mutex<AppState>>>, update: Ctx<Message>)
                             token_count += tokens.len();
                             accumulated_message.push_str(content);
 
-                            if token_count >= 5 {
+                            if token_count >= 50 {
                                 update_message(
                                     &update,
                                     &accumulated_message,

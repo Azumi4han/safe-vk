@@ -1,8 +1,9 @@
-use safe_vk::{extract::Ctx, responses::Message, Filter, Result, SafeVk};
+use safe_vk::{auto_ok, extract::Ctx, responses::Message, Filter, SafeVk};
 use std::env;
 
-async fn members(update: Ctx<Message>) -> Result<()> {
-    let members = update.messages().members().await?;
+#[auto_ok]
+async fn members(update: Ctx<Message>) {
+    let members = update.users().get_conversation_members().await?;
 
     update
         .messages()
@@ -10,8 +11,6 @@ async fn members(update: Ctx<Message>) -> Result<()> {
         .random_id(0)
         .message(&format!("Total members: {}", members.count))
         .await?;
-
-    Ok(())
 }
 
 #[tokio::main]

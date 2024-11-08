@@ -2,23 +2,49 @@ use crate::RequestBuilder;
 use std::fmt;
 use std::sync::Arc;
 
-pub mod messages;
-pub mod photos;
-pub mod users;
+mod bindings;
+mod messages;
+mod photos;
+mod users;
 
-pub struct Builder<T> {
+pub use bindings::*;
+pub use messages::*;
+pub use photos::*;
+pub use users::*;
+
+pub struct MethodBuilder<T = ()> {
     request: Arc<RequestBuilder>,
-    peer_id: i64,
+    peer_id: Option<i64>,
+    query: Vec<u8>,
     _marker: std::marker::PhantomData<T>,
 }
 
-impl<T> Builder<T> {
-    pub fn new(request: Arc<RequestBuilder>, peer_id: i64) -> Self {
-        Self {
-            request,
-            peer_id,
-            _marker: std::marker::PhantomData,
+impl<T> MethodBuilder<T> {
+    pub fn remove_peer_id(&mut self) {
+        let key = String::from("peer_id=");
+        let key_bytes = key.as_bytes();
+
+        if let Some(start) = self
+            .query
+            .windows(key_bytes.len())
+            .position(|window| window == key_bytes)
+        {
+            let end = self.query[start..]
+                .iter()
+                .position(|&byte| byte == b'&')
+                .map(|pos| start + pos + 1)
+                .expect("`Unable to remove peer_id`");
+
+            self.query.drain(start..end);
         }
+    }
+}
+
+impl std::ops::Deref for MethodBuilder {
+    type Target = dyn CtxAbstraction;
+
+    fn deref(&self) -> &Self::Target {
+        self
     }
 }
 
@@ -136,101 +162,79 @@ write_query!(u16);
 write_query!(i8);
 write_query!(usize);
 
+/// Private API
 #[macro_export]
-macro_rules! api_func {
-    ($fn_name:ident, $ty:ty) => {
-        pub fn $fn_name(mut self, value: $ty) -> Self {
-            self.arg(stringify!($fn_name), value);
-            self
-        }
-    };
-}
-
-#[macro_export]
-macro_rules! chained_method_fn {
-    ($name:ident, Option<$output:ty>, $method:expr, $($fn_name:ident($ty:ty)),*) => {
-        chained_method_fn!(@common $name, Option<$output>, $method, $($fn_name($ty)),*);
-        chained_method_fn!(@into_future $name, Option<$output>, $method);
-    };
-
-    ($name:ident, $output:ty, $method:expr, $($fn_name:ident($ty:ty)),*) => {
-        chained_method_fn!(@common $name, $output, $method, $($fn_name($ty)),*);
-        chained_method_fn!(@into_future $name, $output, $method);
-    };
-
-    (@common $name:ident, $output:ty, $method:expr, $($fn_name:ident($ty:ty)),*) => {
-        #[derive(Clone)]
-        pub struct $name {
-            request: Arc<RequestBuilder>,
-            query: Vec<u8>,
-        }
-
-        impl Write for $name {
-            fn write(&mut self, arg: &[u8]) {
-                self.query.extend_from_slice(arg);
-            }
-
-            fn write_fmt(&mut self, arg: impl fmt::Display) {
-                use std::io::Write;
-                write!(self.query, "{}", arg).unwrap();
-            }
-        }
-
-        impl $name {
-            pub fn new(request: Arc<RequestBuilder>, peer_id: Option<i64>) -> Self {
-                let mut method = $name {
-                    request,
-                    query: Vec::new(),
-                };
-                if let Some(peer_id) = peer_id {
-                    method.arg("peer_id", peer_id);
-                }
-                method
-            }
-
-             $(api_func!($fn_name, $ty);)*
-        }
-    };
-
-    (@into_future $name:ident, Option<$output:ty>, $method:expr) => {
-        impl IntoFuture for $name {
-            type Output = Result<Option<$output>>;
-            type IntoFuture = futures_core::future::BoxFuture<'static, Result<Option<$output>>>;
-
-            fn into_future(self) -> Self::IntoFuture {
-                Box::pin(async move {
-                    let response = self.request.post(VK, $method, &self.query, {}).await?;
-                    let parsed = parse_response!(response, Option<$output>)?;
-                    Ok(parsed)
-                })
-            }
-        }
-    };
-
-    (@into_future $name:ident, $output:ty, $method:expr) => {
-        impl IntoFuture for $name {
-            type Output = Result<$output>;
-            type IntoFuture = futures_core::future::BoxFuture<'static, Result<$output>>;
-
-            fn into_future(self) -> Self::IntoFuture {
-                Box::pin(async move {
-                    let response = self.request.post(VK, $method, &self.query, {}).await?;
-                    let parsed = parse_response!(response, $output)?;
-                    Ok(parsed)
-                })
-            }
-        }
-    };
-}
-
-#[macro_export]
-macro_rules! builder_methods {
-    ($($method_name:ident -> $return_type:ty),*) => {
+#[doc(hidden)]
+macro_rules! __method {
+    (
         $(
-            pub fn $method_name(&self) -> $return_type {
-                let request = Arc::clone(&self.request);
-                <$return_type>::new(request, Some(self.peer_id))
+            $(#[$doc:meta])*
+            fn $fn_name:ident($( $arg:ident: $ty:ty ),*)
+        )*
+    ) => {
+        $(
+            $(#[$doc])*
+            pub fn $fn_name(mut self, $($arg: $ty),*) -> Self {
+                self.arg(stringify!($fn_name), $($arg),*);
+                self
             }
         )*
+    };
+}
+
+/// Private API
+#[doc(hidden)]
+#[macro_export]
+macro_rules! _define_abstraction {
+    (
+        $trait_name:ident for $builder:ty {
+            $(
+                $(#[$meta:meta])*
+                fn $method_name:ident $( ( $($arg_name:ident : $arg_type:ty),* ) )?
+                -> $ret:ty {
+                    peer_id: $include_peer_id:expr
+                };
+            )*
+        }
+    ) => {
+        pub trait $trait_name {
+            fn new(request: Arc<RequestBuilder>, peer_id: Option<i64>) -> $builder where Self: Sized;
+
+            $(
+                $(#[$meta])*
+                fn $method_name(&self) -> $ret;
+            )*
+        }
+
+        impl $trait_name for $builder {
+            fn new(request: Arc<RequestBuilder>, peer_id: Option<i64>) -> Self {
+                Self {
+                    request,
+                    peer_id,
+                    query: vec![],
+                    _marker: std::marker::PhantomData,
+                }
+            }
+
+            $(
+                $(#[$meta])*
+                fn $method_name(&self) -> $ret {
+                    let mut method = MethodBuilder {
+                        request: self.request.clone(),
+                        peer_id: self.peer_id,
+                        query: vec![],
+                        _marker: std::marker::PhantomData,
+                    };
+
+                    if $include_peer_id {
+                        if let Some(peer_id) = self.peer_id {
+                            method.arg("peer_id", peer_id);
+                        }
+                    }
+
+                    method
+                }
+            )*
+        }
     };
 }

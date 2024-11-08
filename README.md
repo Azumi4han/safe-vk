@@ -4,7 +4,7 @@
 
 # safe-vk
 
-Simple library with simple API for creating your own VK bot for conversations in **Rust 🦀**
+Rust library for creating your own VK bot for conversations in **Rust 🦀**
 
 ## Current State
 
@@ -17,19 +17,19 @@ API. See more in the [examples](examples).
 
 - Improving asynchronous code
 - Support more VK API methods
-- More tests
 - Documenting code
 - Simplifying code 
 - Making a route for keyboards
+- Add tests
 
 ## Prerequisites
 
-Ensure you have Rust stable version **1.79.0** or **nightly version 1.82.0** installed. 
+Ensure you have Rust stable version **1.82.0** or **nightly version 1.84.0** installed. 
 This library is tested and compatible with these versions.
 
 ## Overview
 
-- Works with newest API version [**5.199**](https://dev.vk.com/en/reference/version/5.199)
+- Works with newest VK API version [**5.199**](https://dev.vk.com/en/reference/version/5.199)
 - Utilizes `routes` same as in popular web frameworks
 - has
   [serde_json](https://docs.rs/serde_json/1.0.111/serde_json/index.html),

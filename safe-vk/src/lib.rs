@@ -100,8 +100,8 @@ pub use safe_vk_common::*;
 pub use self::reqwest_ext::{RequestBuilder, VERSION, VK, WAIT_TIME};
 pub use self::routing::SafeVk;
 
-#[cfg(feature = "macros")]
-pub use safe_vk_macros::auto_ok;
+//#[cfg(feature = "macros")]
+pub use safe_vk_macros::*;
 
 #[cfg(feature = "tokio")]
 pub use self::start_polling::start_polling;
@@ -113,15 +113,22 @@ pub type Response<T> = Result<T>;
 macro_rules! parse_response {
     ($value:expr, Option<$type:ty>) => {{
         use serde::de::Error;
-        let response_value: Result<Option<$type>> = match $value.get("response") {
+        let object: Result<Option<$type>, serde_json::Error> = match $value.get("response") {
             Some(response) => match <$type as serde::Deserialize>::deserialize(response) {
                 Ok(parsed) => Ok(Some(parsed)),
-                Err(_) => Ok(None),
+                Err(_) => {
+                    if response.is_number() || response.is_string() {
+                        Ok(None)
+                    } else {
+                        Err(serde_json::Error::custom("Unexpected response format"))
+                    }
+                }
             },
-            None => Ok(None),
+            None => Ok(None), // No "response" key, return None
         };
-        response_value.map_err(|e| serde_json::Error::custom(e))
+        object.map_err(|e| serde_json::Error::custom(e))
     }};
+    // Case for regular type (not Option<T>)
     ($value:expr, $type:ty) => {{
         use serde::de::Error;
         let response_value = match $value.get("response") {

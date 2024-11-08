@@ -7,11 +7,10 @@ use std::env;
 
 #[derive(Clone)]
 pub struct AppState {
-    version: &'static str,
+    version: String,
 }
 
 async fn version(State(state): State<AppState>, update: Ctx<Message>) -> Result<()> {
-    assert_eq!("1.0.0", state.version);
     update
         .messages()
         .send()
@@ -28,7 +27,9 @@ async fn main() {
 
     let bot = SafeVk::new()
         .command("/version", version, Filter::Sensitive)
-        .with_state(AppState { version: "1.0.0" });
+        .with_state(AppState {
+            version: env!("CARGO_PKG_VERSION").to_string(),
+        });
 
     safe_vk::start_polling(&token, bot).await.unwrap();
 }
