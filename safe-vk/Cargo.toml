@@ -19,7 +19,6 @@ path = "src/lib.rs"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [features]
 default = ["tokio"] 
-#macros = ["dep:safe-vk-macros"]
 unsafe = []
 
 [dependencies]

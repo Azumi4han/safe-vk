@@ -7,9 +7,6 @@ description = "This is an optional library with commong utilites for safe-vk"
 license-file = "LICENSE"
 repository = "https://github.com/azumi4han/safe-vk"
 
-[fetures]
-default = ["tokio"]
-
 [dependencies]
 thiserror = "1.0.56"
 serde_json = "1.0.111"
