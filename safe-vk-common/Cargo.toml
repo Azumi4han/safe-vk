@@ -1,6 +1,6 @@
 [package]
 name = "safe-vk-common"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2021"
 keywords = ["safe-vk"]
 description = "This is an optional library with commong utilites for safe-vk"
