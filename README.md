@@ -2,6 +2,8 @@
 ![Static Badge](https://img.shields.io/badge/rust%20nightly-1.84.0-orange)
 [![Crates.io](https://img.shields.io/crates/v/safe-vk)](https://crates.io/crates/safe-vk)
 
+![safe-vk](assets/logo.svg)
+
 # safe-vk
 
 Rust library for creating your own VK bot for conversations in **Rust 🦀**
@@ -91,3 +93,7 @@ Feel free to contribute and propose new ideas!
 ## License
 
 `safe-vk` is available under the MIT license. See the [MIT License](LICENSE) file for more details
+
+## Credits
+Logo designed by [socalledfishart](https://x.com/socalledfishart
+). More of her work on [Telegram](https://t.me/socalledfish_art)
